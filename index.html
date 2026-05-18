@@ -119,7 +119,7 @@
                 <input id="reg-email" type="email" placeholder="Correo electrónico" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl outline-none text-white text-sm">
                 <input id="reg-password" type="password" placeholder="Crea una contraseña" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl outline-none text-white text-sm">
                 <div class="bg-white/5 border border-white/5 p-4 rounded-xl space-y-3">
-                    <p class="text-[9px] text-zinc-400 leather-relaxed uppercase font-bold">
+                    <p class="text-[9px] text-zinc-400 leading-relaxed uppercase font-bold">
                         ⚠️ AVISO: Riesgo real de capital. Juega con responsabilidad.
                     </p>
                     <label class="flex items-center gap-3 cursor-pointer">
@@ -267,7 +267,7 @@
             },
             closeModal(id) { playSfx('click'); document.getElementById(id).classList.add('hidden-view'); },
             toggleAccordion(id) { const el = document.getElementById(id); const arrow = document.getElementById('arrow-' + id); el.classList.toggle('hidden-view'); if(arrow) arrow.style.transform = el.classList.contains('hidden-view') ? 'rotate(180deg)' : 'rotate(0deg)'; },
-            depNextStep() { const amt = Math.abs(parseFloat(document.getElementById('dep-amount').value)); if(isNaN(amt) || amt <= 0) return this.notify("Monto inválido", "error"); playSfx('click'); const display = document.getElementById('display-dep-amount'); if(display) display.innerText = `$${amt.toFixed(2)}`; document.getElementById('dep-step-1').classList.add('hidden-view'); document.getElementById('dep-step-2').classList.remove('hidden-view'); },
+            depNextStep() { const amt = Math.abs(parseFloat(document.getElementById('dep-amount').value)); if(isNaN(amt) || amt <= 0) return this.notify("Monto inválido", "error"); if(State.currentTx === 'withdrawal') { const clabeVal = document.getElementById('clabe-input-field').value; if(!clabeVal || clabeVal.length !== 18) return this.notify("CLABE debe ser de 18 dígitos", "error"); } playSfx('click'); const display = document.getElementById('display-dep-amount'); if(display) display.innerText = `$${amt.toFixed(2)}`; document.getElementById('dep-step-1').classList.add('hidden-view'); document.getElementById('dep-step-2').classList.remove('hidden-view'); },
             copyClabe() { const clabe = document.getElementById('clabe-number').innerText; navigator.clipboard.writeText(clabe).then(() => { playSfx('click'); this.notify("CLABE Copiada", "success"); }); },
             handleFile(input) { if(input.files && input.files[0]) { playSfx('click'); const label = document.getElementById('file-label'); label.innerText = "Foto lista"; label.classList.replace('text-zinc-500', 'text-emerald-500'); } },
             notify(m, t) { const n = document.createElement('div'); n.className = `p-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-2xl animate__animated animate__fadeInDown ${t==='success'?'bg-emerald-500 text-black':'bg-red-500 text-white'}`; n.innerText = m; document.getElementById('notif-container').appendChild(n); setTimeout(() => { n.classList.replace('animate__fadeInDown', 'animate__fadeOutUp'); setTimeout(()=>n.remove(), 500); }, 3000); },
@@ -332,11 +332,9 @@
                 const bank = document.getElementById('bank-name').value; 
                 const beneficiary = document.getElementById('beneficiary-name').value; 
                 if(!amount || amount <= 0 || !bank || !beneficiary) return UI.notify("Completa campos", "error"); 
-                
                 const btn = document.getElementById('btn-confirm-dep'); 
                 btn.disabled = true; btn.innerText = "PROCESANDO..."; 
                 State.isProcessing = true; 
-
                 try { 
                     const isDeposit = State.currentTx === 'deposit';
                     let historyItem = { 
@@ -380,8 +378,6 @@
                 const { data: b } = await sb.from('history').select('*').eq('user_id', State.user.id).eq('type', 'bets').order('created_at', { ascending: false }).limit(20); 
                 const { data: d } = await sb.from('history').select('*').eq('user_id', State.user.id).eq('type', 'deposits').order('created_at', { ascending: false }).limit(20); 
                 const container = document.getElementById('history-lists'); 
-                
-                // Dividir apuestas de retiros camuflados para pintarlos por separado en el historial
                 const realBets = (b || []).filter(item => !item.label.includes('RETIRO'));
                 const realWithdrawals = (b || []).filter(item => item.label.includes('RETIRO'));
 
@@ -438,7 +434,7 @@
             slots: {
                 prizes: { '7️⃣': { mult: 500, weight: 1 }, '🔔': { mult: 50, weight: 8 }, '🍋': { mult: 10, weight: 25 }, '🍒': { mult: 3, weight: 66 } },
                 init() { [1,2,3].forEach(id => { const r = document.getElementById(`reel-${id}`); if(r) { r.innerHTML = ''; Array(20).fill(SYMBOLS).flat().forEach(s => r.innerHTML += `<div class="slot-item">${s}</div>`); } }); },
-                async play() { if(State.isSpinning || State.isProcessing) return; State.isSpinning = true; State.isProcessing = true; const b = Math.abs(parseFloat(document.getElementById('slots-bet-input').value)) || 10; const btn = document.getElementById('btn-slots-play'); btn.disabled = true; const { data: user } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single(); if(!user || user.saldo < b || b <= 0) { State.isSpinning = false; State.isProcessing = false; btn.disabled = false; return UI.notify("Saldo insuficiente", "error"); } playSfx('spin'); await Core.updateBalanceDB(-b); State.balance -= b; UI.updateBalance(); let result = []; const isWinner = Math.random() < (0.12 * State.luckFactor); if (isWinner) { const roll = Math.random() * 100; let acc = 0; let sel = '🍒'; for (const [sym, config] of Object.entries(this.prizes)) { acc += config.weight; if (roll <= acc) { sel = sym; break; } } result = [sel, sel, sel]; } else { const s1 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)], s2 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; let s3 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; if (s1 === s2 && s2 === s3) s3 = SYMBOLS[(SYMBOLS.indexOf(s3) + 1) % SYMBOLS.length]; result = [s1, s2, s3]; } [1,2,3].forEach((id, i) => { const reel = document.getElementById(`reel-${id}`); if(reel) { const targetSymbol = result[i]; const targetPos = SYMBOLS.indexOf(targetSymbol); const scrollDist = (90 * SYMBOLS.length * 5) + (targetPos * 90); reel.style.transition = 'none'; reel.style.transform = 'translateY(0)'; setTimeout(() => { reel.style.transition = 'transform 3.5s cubic-bezier(0.15, 0, 0.05, 1)'; reel.style.transform = `translateY(-${scrollDist}px)`; }, 50); } }); setTimeout(async () => { let win = 0; if (result[0] === result[1] && result[1] === result[2]) win = b * this.prizes[result[0]].mult; if(win > 0) { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`¡PREMIO $${win.toFixed(2)}!`, "success"); } else { playSfx('lose'); UI.notify("SIN SUERTE", "error"); } UI.updateBalance(); GameLogic.adjustLuck(win, b, win > 0 ? 2 : 0); await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win ? win : -b, label: 'SLOTS', status: 'completed' }); State.isSpinning = false; State.isProcessing = false; btn.disabled = false; }, 3600); }
+                async play() { if(State.isSpinning || State.isProcessing) return; State.isSpinning = true; State.isProcessing = true; const b = Math.abs(parseFloat(document.getElementById('slots-bet-input').value)) || 10; const btn = document.getElementById('btn-slots-play'); btn.disabled = true; const { data: user } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single(); if(!user || user.saldo < b || b <= 0) { State.isSpinning = false; State.isProcessing = false; btn.disabled = false; return UI.notify("Saldo insuficiente", "error"); } playSfx('spin'); await Core.updateBalanceDB(-b); State.balance -= b; UI.updateBalance(); let result = []; const isWinner = Math.random() < (0.12 * State.luckFactor); if (isWinner) { const roll = Math.random() * 100; let acc = 0; let sel = '🍒'; for (const [sym, config] of Object.entries(this.prizes)) { acc += config.weight; if (roll <= acc) { sel = sym; break; } } result = [sel, sel, sel]; } else { const s1 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)], s2 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; let s3 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; if (s1 === s2 && s2 === s3) s3 = SYMBOLS[(SYMBOLS.indexOf(s3) + 1) % SYMBOLS.length]; result = [s1, s2, s3]; } [1,2,3].forEach((id, i) => { const reel = document.getElementById(`reel-${id}`); if(reel) { const targetSymbol = result[i]; const targetPos = SYMBOLS.indexOf(targetSymbol); const scrollDist = (90 * SYMBOLS.length * 5) + (targetPos * 90); reel.style.transition = 'none'; reel.style.transform = 'translateY(0)'; setTimeout(() => { reel.style.transition = 'transform 3.5s cubic-bezier(0.15, 0, 0.05, 1)'; reel.style.transform = `translateY(-${scrollDist}px)`; }, 50); } }); setTimeout(async () => { let win = 0; if (result[0] === result[1] && result[1] === result[2]) win = b * this.prizes[result[0]].mult; if(win > 0) { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`¡GANASTE $${win.toFixed(2)}!`, "success"); } else { playSfx('lose'); UI.notify("SIN SUERTE", "error"); } UI.updateBalance(); GameLogic.adjustLuck(win, b, win > 0 ? 2 : 0); await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win ? win : -b, label: 'SLOTS', status: 'completed' }); State.isSpinning = false; State.isProcessing = false; btn.disabled = false; }, 3600); }
             },
             mines: {
                 active: false, mines: [], revealed: [], mult: 1, bet: 10, multSteps: [1.25, 1.30, 1.75, 2.00, 5.50, 10.20, 16.50, 28.00, 45.00, 68.00, 95.00, 130.00, 175.00, 225.00, 280.00, 330.00, 375.00, 415.00, 445.00, 470.00, 490.00, 500.00],
@@ -446,7 +442,7 @@
                 async start() { if(this.active || State.isProcessing) return; this.active = true; State.isProcessing = true; const b = Math.abs(parseFloat(document.getElementById('mines-bet-input').value)) || 10; const btn = document.getElementById('btn-mines-start'); btn.disabled = true; const { data: user } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single(); if(!user || user.saldo < b || b <= 0) { this.active = false; State.isProcessing = false; btn.disabled = false; return UI.notify("Saldo insuficiente", "error"); } playSfx('click'); await Core.updateBalanceDB(-b); State.balance -= b; UI.updateBalance(); this.bet = b; this.mult = 1; this.revealed = []; this.mines = []; while(this.mines.length < 3) { let r = Math.floor(Math.random()*25); if(!this.mines.includes(r)) this.mines.push(r); } document.getElementById('mines-controls').classList.add('hidden-view'); document.getElementById('mines-status').classList.remove('hidden-view'); document.getElementById('mines-mult').innerText = '1.00x'; document.getElementById('mines-next-hint').innerText = `Siguiente: x${this.multSteps[0].toFixed(2)}`; document.getElementById('mines-cashout-btn').innerText = `COBRAR $${this.bet.toFixed(2)}`; this.drawGrid(); State.isProcessing = false; btn.disabled = false; },
                 cell(i) { if(!this.active || this.revealed.includes(i) || State.isProcessing) return; const winCount = this.revealed.length; let dynamicFail = (0.12 + (winCount * 0.10)) / State.luckFactor; if (State.luckFactor > 1.4 && winCount < 3) dynamicFail = 0.01; if (winCount > 1 && Math.random() < dynamicFail) { if (!this.mines.includes(i)) { this.mines.pop(); this.mines.push(i); } } this.revealed.push(i); const el = document.getElementById(`m-${i}`); if(this.mines.includes(i)) { playSfx('lose'); el.innerHTML = '💣'; el.classList.add('bg-red-500/20', 'border-red-500'); this.revealRemainingMines(); UI.notify("¡BOMBA!", "error"); this.end(false); } else { playSfx('click'); el.innerHTML = '💎'; el.classList.add('bg-emerald-500/20', 'border-emerald-500'); this.mult = this.multSteps[winCount] || 500.00; document.getElementById('mines-mult').innerText = this.mult.toFixed(2) + 'x'; const nVal = this.multSteps[this.revealed.length] || 500.00; document.getElementById('mines-next-hint').innerText = `Siguiente: x${nVal.toFixed(2)}`; document.getElementById('mines-cashout-btn').innerText = `COBRAR $${(this.bet * this.mult).toFixed(2)}`; } },
                 revealRemainingMines() { this.mines.forEach(m => { const el = document.getElementById(`m-${m}`); if (el && !this.revealed.includes(m)) { el.innerHTML = '💣'; el.classList.add('opacity-50'); } }); },
-                async cashout() { if(!this.active || State.isProcessing) return; State.isProcessing = true; const win = this.bet * this.mult; try { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`GANASTE $${win.toFixed(2)}`, "success"); await this.end(true); } catch(e) { State.isProcessing = false; } },
+                async cashout() { if(!this.active || State.isProcessing) return; State.isProcessing = true; const win = this.bet * this.mult; try { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`GANASTE $${win.toFixed(2)}`, "success"); await this.end(true); } finally { State.isProcessing = false; } },
                 async end(win) { const winAmt = win ? (this.bet * this.mult) : 0; GameLogic.adjustLuck(winAmt, this.bet, win ? this.mult : 0); this.active = false; State.isProcessing = false; UI.updateBalance(); document.getElementById('mines-controls').classList.remove('hidden-view'); document.getElementById('mines-status').classList.add('hidden-view'); await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win ? winAmt : -this.bet, label: 'MINAS', status: 'completed' }); }
             },
             tower: {
@@ -455,7 +451,7 @@
                 async start() { if(this.active || State.isProcessing) return; this.active = true; State.isProcessing = true; const b = Math.abs(parseFloat(document.getElementById('tower-bet-input').value)) || 10; const btn = document.getElementById('btn-tower-start'); btn.disabled = true; const { data: user = {} } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single(); if(!user || user.saldo < b || b <= 0) { this.active = false; State.isProcessing = false; btn.disabled = false; return UI.notify("Saldo insuficiente", "error"); } playSfx('click'); await Core.updateBalanceDB(-b); State.balance -= b; UI.updateBalance(); this.bet = b; this.level = 0; this.mult = 1; this.towerMines = Array.from({length: 8}, () => Math.floor(Math.random() * 3)); this.drawTower(); document.getElementById('tower-row-0').classList.remove('opacity-30'); document.getElementById('tower-controls').classList.add('hidden-view'); const cbtn = document.getElementById('tower-cashout-btn'); cbtn.classList.remove('hidden-view'); cbtn.innerText = `COBRAR $${this.bet.toFixed(2)}`; cbtn.disabled = false; State.isProcessing = false; btn.disabled = false; },
                 select(r, c) { if(!this.active || r !== this.level || State.isProcessing) return; const items = document.getElementById(`tower-row-${r}`).children; if(c === this.towerMines[r]) { playSfx('lose'); items[c].innerHTML = '💣'; items[c].classList.add('bg-red-500/20', 'border-red-500'); this.revealAllMines(); UI.notify("PERDISTE", "error"); this.end(false); } else { playSfx('click'); items[c].innerHTML = '💎'; items[c].classList.add('bg-emerald-500/20', 'border-emerald-500'); const mIdx = this.towerMines[r]; document.getElementById(`t-${r}-${mIdx}`).innerHTML = '<span class="opacity-20">💣</span>'; this.mult = this.towerSteps[this.level]; this.level++; document.getElementById('tower-cashout-btn').innerText = `COBRAR $${(this.bet * this.mult).toFixed(2)}`; if(this.level < 8) document.getElementById(`tower-row-${this.level}`).classList.remove('opacity-30'); else this.cashout(); } },
                 revealAllMines() { this.towerMines.forEach((m, r) => { const el = document.getElementById(`t-${r}-${m}`); if(el) el.innerHTML = '💣'; }); },
-                async cashout() { if(!this.active || State.isProcessing) return; State.isProcessing = true; this.revealAllMines(); const win = this.bet * this.mult; try { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`GANASTE $${win.toFixed(2)}`, "success"); await this.end(true); } finally { State.isProcessing = false; } },
+                async cashout() { if(!this.active || State.isProcessing) return; State.isProcessing = true; this.revealAllMines(); const win = this.bet * this.mult; try { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`GANASTE $${win.toFixed(2)}!`, "success"); await this.end(true); } finally { State.isProcessing = false; } },
                 async end(win) { const winAmt = win ? (this.bet * this.mult) : 0; GameLogic.adjustLuck(winAmt, this.bet, win ? this.mult : 0); this.active = false; State.isProcessing = false; UI.updateBalance(); document.getElementById('tower-controls').classList.remove('hidden-view'); document.getElementById('tower-cashout-btn').classList.add('hidden-view'); await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win ? winAmt : -this.bet, label: 'TORRE', status: 'completed' }); }
             },
             blackjack: {
@@ -473,7 +469,7 @@
                     document.getElementById('bj-controls').classList.add('hidden-view');
                     document.getElementById('bj-actions').classList.remove('hidden-view');
                     this.render(true); State.isProcessing = false;
-                    if(this.getScore(this.playerHand) === 21) this.stand();
+                    if(this.getFinalScore(this.playerHand) === 21) this.stand();
                 },
                 createDeck() { 
                     const suits = ['♠', '♣', '♥', '♦'], vls = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']; 
@@ -483,23 +479,38 @@
                 },
                 drawCard() { return this.deck.pop(); },
                 
-                // Lógica de Ases Dinámica y justa corregida
-                getScore(hand) {
-                    let score = 0, aces = 0;
+                // Lógica de conteo de As ajustada
+                getFinalScore(hand) {
+                    let score = 0;
+                    let hasTenValue = false;
+                    let aceCount = 0;
+                    
                     for(let c of hand) {
-                        if(c.v === 'A') { aces++; score += 11; }
-                        else if(['J','Q','K'].includes(c.v)) score += 10;
-                        else score += parseInt(c.v);
+                        if(c.v === 'A') {
+                            aceCount++;
+                        } else if(['10','J','Q','K'].includes(c.v)) {
+                            hasTenValue = true;
+                            score += 10;
+                        } else {
+                            score += parseInt(c.v);
+                        }
                     }
-                    while(score > 21 && aces > 0) { score -= 10; aces--; }
+                    
+                    // Si hay un As acompañado de un 10 en la mano inicial de 2 cartas, es un 21 natural (Blackjack)
+                    if (aceCount === 1 && hand.length === 2 && hasTenValue) {
+                        return 21;
+                    }
+                    
+                    // Para cualquier otro caso, el As vale estrictamente 1 punto por defecto
+                    score += aceCount * 1;
                     return score;
                 },
-                hit() { if(!this.active || State.isProcessing) return; playSfx('card'); this.playerHand.push(this.drawCard()); this.render(true); if(this.getScore(this.playerHand) > 21) this.end('lose'); },
+                hit() { if(!this.active || State.isProcessing) return; playSfx('card'); this.playerHand.push(this.drawCard()); this.render(true); if(this.getFinalScore(this.playerHand) > 21) this.end('lose'); },
                 async stand() { 
                     if(!this.active || State.isProcessing) return; 
                     State.isProcessing = true; this.render(false); await new Promise(r => setTimeout(r, 600));
-                    while(this.getScore(this.dealerHand) < 17) { playSfx('card'); this.dealerHand.push(this.drawCard()); this.render(false); await new Promise(r => setTimeout(r, 600)); } 
-                    const ps = this.getScore(this.playerHand), ds = this.getScore(this.dealerHand); 
+                    while(this.getFinalScore(this.dealerHand) < 17) { playSfx('card'); this.dealerHand.push(this.drawCard()); this.render(false); await new Promise(r => setTimeout(r, 600)); } 
+                    const ps = this.getFinalScore(this.playerHand), ds = this.getFinalScore(this.dealerHand); 
                     if(ds > 21 || ps > ds) this.end('win'); else if(ps === ds) this.end('push'); else this.end('lose'); 
                 },
                 render(hideDealer) { 
@@ -511,9 +522,9 @@
                         document.getElementById('dealer-score').innerText = '?';
                     } else {
                         dC.innerHTML = this.dealerHand.map(c => `<div class="card-bj ${['♥','♦'].includes(c.s)?'card-red':''}"><span>${c.v}</span><span class="text-[10px]">${c.s}</span></div>`).join(''); 
-                        document.getElementById('dealer-score').innerText = this.getScore(this.dealerHand);
+                        document.getElementById('dealer-score').innerText = this.getFinalScore(this.dealerHand);
                     }
-                    document.getElementById('player-score').innerText = this.getScore(this.playerHand); 
+                    document.getElementById('player-score').innerText = this.getFinalScore(this.playerHand); 
                 },
                 async end(res) { 
                     this.active = false; let win = 0; 
