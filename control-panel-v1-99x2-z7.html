@@ -46,10 +46,13 @@
         const sb = window.supabase.createClient("https://dakhnqriwbzihlzhtfcb.supabase.co", "sb_publishable_rRcNEvZ9n0IEJzTQcK90nQ_5lfwSDYs");
         let currentType = 'deposits';
 
-        // SISTEMA DE CONTROL DE ACCESO
+        // ⚠️ CONFIGURACIÓN DE SEGURIDAD EXCLUSIVA
+        // REEMPLAZA ESTE CORREO POR TU CORREO REAL DE ADMINISTRADOR EXACTAMENTE COMO ESTÁ EN SUPABASE
+        const CORREO_ADMIN_AUTORIZADO = "ed8108868@gmail.com"; 
+
         const AdminAuth = {
             async login() {
-                const email = document.getElementById('admin-email').value;
+                const email = document.getElementById('admin-email').value.trim().toLowerCase();
                 const password = document.getElementById('admin-password').value;
 
                 if (!email || !password) {
@@ -57,20 +60,29 @@
                     return;
                 }
 
-                // Autenticación directa contra los servidores de Supabase Auth
+                // 1. Validar primero si el correo coincide con el dueño del casino
+                if (email !== CORREO_ADMIN_AUTORIZADO.toLowerCase()) {
+                    alert("Acceso denegado: Este correo electrónico no tiene permisos de administrador.");
+                    return;
+                }
+
+                // 2. Si el correo es correcto, verificar la contraseña con Supabase
                 const { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
 
                 if (error) {
-                    alert("Credenciales incorrectas: " + error.message);
+                    alert("Contraseña incorrecta: " + error.message);
                 } else {
                     this.showPanel();
                 }
             },
             async checkSession() {
-                // Valida si el administrador ya había iniciado sesión previamente
                 const { data: { session } } = await sb.auth.getSession();
-                if (session) {
+                // Al recargar, valida que la sesión activa pertenezca estrictamente a tu correo
+                if (session && session.user.email.toLowerCase() === CORREO_ADMIN_AUTORIZADO.toLowerCase()) {
                     this.showPanel();
+                } else if (session) {
+                    // Si un usuario común intenta quedarse logueado en el panel, lo saca de inmediato
+                    await sb.auth.signOut();
                 }
             },
             showPanel() {
@@ -128,7 +140,7 @@
                                 <div class="mt-2 space-y-1">
                                     <p class="text-[10px] text-zinc-500 font-mono">USUARIO ID: ${item.user_id}</p>
                                     <p class="text-[11px] text-white font-bold bg-white/5 px-2 py-1 rounded w-fit">BANCO: ${item.bank_name || 'No especificado'}</p>
-                                    <p class="text-[11px] text-zinc-300 italic">TITULAR: ${item.account_holder || 'No especificado'}</p>
+                                    <p class="text-[11px] text-zinc-300 italic">TITULAR / CLABE: ${item.account_holder || 'No especificado'}</p>
                                     <p class="text-[10px] text-zinc-400 uppercase">SALDO ACTUAL DEL JUGADOR: $${currentSaldo}</p>
                                 </div>
                             </div>
@@ -182,9 +194,7 @@
             loadPending();
         }
 
-        // Ejecutar revisión automática al cargar la página
         AdminAuth.checkSession();
-        setInterval(loadPending, 5000); 
     </script>
 </body>
 </html>
