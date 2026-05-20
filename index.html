@@ -702,20 +702,26 @@
     
 
 
-    <!-- Botón de Messenger con apertura directa a App -->
-    <a id="messenger-btn" 
-       href="https://m.me/721633921035642" 
-       onclick="if(navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)) { window.location.href='fb-messenger://user-thread/721633921035642'; return false; }"
-       target="_blank" 
-       class="fixed bottom-24 right-6 z-[600] bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:scale-105 transition-transform">
-        <i class="fab fa-facebook-messenger text-2xl"></i>
-    </a>
+    
+
+
+    <!-- Botón de Messenger y texto de Soporte -->
+    <div id="messenger-container" class="fixed bottom-24 right-6 z-[600] flex flex-col items-center gap-1">
+        <a id="messenger-btn" 
+           href="https://m.me/721633921035642" 
+           onclick="if(navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)) { window.location.href='fb-messenger://user-thread/721633921035642'; return false; }"
+           target="_blank" 
+           class="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:scale-105 transition-transform">
+            <i class="fab fa-facebook-messenger text-2xl"></i>
+        </a>
+        <span class="text-white text-[10px] font-bold bg-black/50 px-2 py-0.5 rounded">SOPORTE</span>
+    </div>
 
     <script>
-        // Lógica para ocultar el botón de Messenger en vistas específicas
+        // Lógica para ocultar el botón de Messenger y el texto de Soporte en vistas específicas
         setInterval(() => {
-            const btn = document.getElementById('messenger-btn');
-            if (!btn) return;
+            const container = document.getElementById('messenger-container');
+            if (!container) return;
 
             const authView = document.getElementById('auth-view');
             const modalDep = document.getElementById('modal-deposit');
@@ -724,9 +730,9 @@
             const isVisible = (el) => el && !el.classList.contains('hidden-view');
 
             if (isVisible(authView) || isVisible(modalDep) || isVisible(viewGame)) {
-                btn.style.setProperty('display', 'none', 'important');
+                container.style.setProperty('display', 'none', 'important');
             } else {
-                btn.style.setProperty('display', 'flex', 'important');
+                container.style.setProperty('display', 'flex', 'important');
             }
         }, 300);
     </script>
