@@ -701,5 +701,25 @@
         <i class="fab fa-facebook-messenger text-2xl"></i>
     </a>
 
+
+    <script>
+        // Lógica para ocultar el botón de Messenger en vistas específicas
+        setInterval(() => {
+            const btn = document.getElementById('messenger-btn');
+            if (!btn) return;
+            const authView = document.getElementById('auth-view');
+            const modalDep = document.getElementById('modal-deposit');
+            
+            const isAuthVisible = authView && !authView.classList.contains('hidden-view');
+            const isModalVisible = modalDep && !modalDep.classList.contains('hidden-view');
+            
+            if (isAuthVisible || isModalVisible) {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = 'flex';
+            }
+        }, 300);
+    </script>
+
 </body>
 </html>
