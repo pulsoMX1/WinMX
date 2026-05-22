@@ -669,27 +669,12 @@
 
                 // 2. BANQUETA (Zona Segura de Inicio)
                 const sidewalkGeo = new THREE.BoxGeometry(1.6, 0.15, 30);
-                const sidewalkMat = new THREE.MeshStandardMaterial({ 
-                    color: 0x3f3f46, 
-                    roughness: 1.0,
-                    map: null
-                }); // Gris Cemento
+                const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 1.0 }); // Gris Cemento
                 const sidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
                 // Posicionada exactamente debajo del primer carril UI (INICIO)
                 sidewalk.position.set(-4.1, 0.075, 0); 
                 sidewalk.receiveShadow = true;
                 this.scene.add(sidewalk);
-
-                // 2.5 BANQUETA FINAL (Zona Segura de Llegada)
-                const finalSidewalkGeo = new THREE.BoxGeometry(1.6, 0.15, 30);
-                const finalSidewalkMat = new THREE.MeshStandardMaterial({ 
-                    color: 0x3f3f46, 
-                    roughness: 1.0
-                });
-                const finalSidewalk = new THREE.Mesh(finalSidewalkGeo, finalSidewalkMat);
-                finalSidewalk.position.set(4.15, 0.075, 0); // Al lado derecho, después de LLEGADA
-                finalSidewalk.receiveShadow = true;
-                this.scene.add(finalSidewalk);
 
                 // 3. LÍNEAS DE LA CARRETERA (Separadores Blancos)
                 const lineMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.9 });
@@ -772,404 +757,365 @@
                 this.chicken.rotation.y = Math.PI / 2; 
                 this.scene.add(this.chicken);
 
-                // =============== ULTRA-DETAILED NYC CITY ===============
-                
-                // RASCACIELOS MANHATTAN - LADO IZQUIERDO (Ultra-Professional)
-                const manhattanBuildingData = [
-                    { height: 8.5, x: -7.2, z: -10, color: 0x2c3e50 },
-                    { height: 10.5, x: -8.7, z: -6, color: 0x34495e },
-                    { height: 9.5, x: -10.0, z: -2, color: 0x3d5a73 }
-                ];
-                
-                manhattanBuildingData.forEach(bldg => {
-                    // Edificio principal
-                    const buildGeo = new THREE.BoxGeometry(2.0, bldg.height, 1.2);
-                    const buildMat = new THREE.MeshStandardMaterial({ 
-                        color: bldg.color, 
-                        roughness: 0.65,
-                        metalness: 0.15,
-                        envMapIntensity: 0.8
+                // =============== MULTIPLICADORES 3D EN CARRILES ===============
+                const multipliers = [1.5, 2.2, 4.0, 18.0, 45.0, 100.0];
+                multipliers.forEach((mult, idx) => {
+                    const laneX = -3.98 + ((idx + 1) * 1.14);
+                    
+                    // Fondo de multiplicador (panel 3D)
+                    const multBackGeo = new THREE.BoxGeometry(0.9, 0.5, 0.05);
+                    const multBackMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x000000, 
+                        roughness: 0.3,
+                        metalness: 0.8,
+                        emissive: 0x001100,
+                        emissiveIntensity: 0.3
                     });
-                    const building = new THREE.Mesh(buildGeo, buildMat);
-                    building.position.set(bldg.x, bldg.height / 2, bldg.z);
-                    building.castShadow = true;
-                    building.receiveShadow = true;
-                    this.scene.add(building);
+                    const multBack = new THREE.Mesh(multBackGeo, multBackMat);
+                    multBack.position.set(laneX, 0.8, 0.2);
+                    multBack.castShadow = true;
+                    this.scene.add(multBack);
                     
-                    // Windows ultra-detalladas
-                    const windowSpacingX = 0.3;
-                    const windowSpacingY = 0.35;
-                    const winGeo = new THREE.PlaneGeometry(0.22, 0.22);
-                    const winMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xffffaa, 
-                        emissive: 0xffff88, 
-                        emissiveIntensity: 0.85,
-                        roughness: 0.25,
-                        metalness: 0.1
+                    // Canvas para texto del multiplicador
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256;
+                    canvas.height = 128;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Fondo
+                    ctx.fillStyle = '#000011';
+                    ctx.fillRect(0, 0, 256, 128);
+                    
+                    // Borde verde neon
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 8;
+                    ctx.strokeRect(4, 4, 248, 120);
+                    
+                    // Texto
+                    ctx.fillStyle = '#00ff00';
+                    ctx.font = 'bold 80px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(mult.toFixed(2) + 'x', 128, 64);
+                    
+                    // Crear textura
+                    const texture = new THREE.CanvasTexture(canvas);
+                    texture.minFilter = THREE.LinearFilter;
+                    texture.magFilter = THREE.LinearFilter;
+                    
+                    const multGeo = new THREE.PlaneGeometry(0.85, 0.45);
+                    const multMat = new THREE.MeshStandardMaterial({ 
+                        map: texture,
+                        emissive: 0x00ff00,
+                        emissiveIntensity: 0.6,
+                        roughness: 0.1,
+                        metalness: 0.2
                     });
+                    const multDisplay = new THREE.Mesh(multGeo, multMat);
+                    multDisplay.position.set(laneX, 0.8, 0.22);
+                    multDisplay.castShadow = true;
+                    this.scene.add(multDisplay);
                     
-                    for (let wx = -0.8; wx <= 0.8; wx += windowSpacingX) {
-                        for (let wy = 0.4; wy < bldg.height - 0.3; wy += windowSpacingY) {
-                            const win = new THREE.Mesh(winGeo, winMat);
-                            win.position.set(bldg.x - 1.0, wy, bldg.z + 0.61);
-                            this.scene.add(win);
-                            
-                            // Marco oscuro de ventana
-                            const frameGeo = new THREE.PlaneGeometry(0.26, 0.26);
-                            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
-                            const frame = new THREE.Mesh(frameGeo, frameMat);
-                            frame.position.set(bldg.x - 1.01, wy, bldg.z + 0.60);
-                            this.scene.add(frame);
-                        }
-                    }
-                    
-                    // Cornisa superior (Cornice)
-                    const corniceGeo = new THREE.BoxGeometry(2.2, 0.25, 1.4);
-                    const corniceMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
-                    const cornice = new THREE.Mesh(corniceGeo, corniceMat);
-                    cornice.position.set(bldg.x, bldg.height + 0.125, bldg.z);
-                    this.scene.add(cornice);
-                    
-                    // Antenas en el techo
-                    const antGeo = new THREE.CylinderGeometry(0.05, 0.05, bldg.height * 0.2, 8);
-                    const antMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.7 });
-                    const antenna = new THREE.Mesh(antGeo, antMat);
-                    antenna.position.set(bldg.x, bldg.height + 0.5, bldg.z);
-                    this.scene.add(antenna);
-                    
-                    // Luces en antena
-                    const antennaLight = new THREE.PointLight(0xff0000, 1.2, 20);
-                    antennaLight.position.set(bldg.x, bldg.height + 0.6, bldg.z);
-                    this.scene.add(antennaLight);
+                    // Luz alrededor del multiplicador
+                    const multLight = new THREE.PointLight(0x00ff00, 1.5, 8);
+                    multLight.position.set(laneX, 0.8, 0.5);
+                    this.scene.add(multLight);
                 });
 
-                // RASCACIELOS TIMES SQUARE - LADO DERECHO (Ultra-Professional)
-                const timesSquareBuildingData = [
-                    { height: 9.0, x: 5.8, z: -10, color: 0xff4444 },
-                    { height: 11.0, x: 7.4, z: -6, color: 0xff6633 },
-                    { height: 10.0, x: 8.8, z: -2, color: 0xffaa00 }
+                // =============== EDIFICIOS ULTRA 4K HD PROFESIONALES ===============
+                
+                // MANHATTAN - SUPER DETALLADO
+                const manhattanBuildings = [
+                    { h: 9.5, x: -7.5, z: -11, color: 0x2c3e50 },
+                    { h: 11.5, x: -9.2, z: -7, color: 0x34495e },
+                    { h: 10.5, x: -10.8, z: -3, color: 0x3d5a73 }
                 ];
                 
-                timesSquareBuildingData.forEach(bldg => {
-                    // Edificio principal
-                    const buildGeo = new THREE.BoxGeometry(2.2, bldg.height, 1.2);
+                manhattanBuildings.forEach((b, idx) => {
+                    // Edificio base
+                    const buildGeo = new THREE.BoxGeometry(2.2, b.h, 1.3);
                     const buildMat = new THREE.MeshStandardMaterial({ 
-                        color: bldg.color, 
-                        roughness: 0.55,
+                        color: b.color, 
+                        roughness: 0.6,
                         metalness: 0.2,
                         envMapIntensity: 1.0
                     });
                     const building = new THREE.Mesh(buildGeo, buildMat);
-                    building.position.set(bldg.x, bldg.height / 2, bldg.z);
+                    building.position.set(b.x, b.h / 2, b.z);
+                    building.castShadow = true;
+                    building.receiveShadow = true;
+                    this.scene.add(building);
+                    
+                    // Windows detalladas CON MARCOS
+                    for (let wx = -0.8; wx <= 0.8; wx += 0.32) {
+                        for (let wy = 0.5; wy < b.h - 0.3; wy += 0.38) {
+                            // Marco oscuro (window frame)
+                            const frameGeo = new THREE.PlaneGeometry(0.26, 0.26);
+                            const frameMat = new THREE.MeshStandardMaterial({ 
+                                color: 0x1a1a1a,
+                                roughness: 0.8,
+                                metalness: 0.1
+                            });
+                            const frame = new THREE.Mesh(frameGeo, frameMat);
+                            frame.position.set(b.x - 1.1, wy, b.z + 0.66);
+                            frame.castShadow = true;
+                            this.scene.add(frame);
+                            
+                            // Vidrio luminoso
+                            const glassGeo = new THREE.PlaneGeometry(0.22, 0.22);
+                            const glassMat = new THREE.MeshStandardMaterial({ 
+                                color: 0xffff99, 
+                                emissive: 0xffff88, 
+                                emissiveIntensity: 0.9,
+                                roughness: 0.2,
+                                metalness: 0.05,
+                                transparent: true,
+                                opacity: 0.8
+                            });
+                            const glass = new THREE.Mesh(glassGeo, glassMat);
+                            glass.position.set(b.x - 1.1, wy, b.z + 0.65);
+                            this.scene.add(glass);
+                            
+                            // Detalle interno (punto de luz en ventana)
+                            if (Math.random() > 0.3) {
+                                const innerLight = new THREE.PointLight(0xffff77, 0.3, 1);
+                                innerLight.position.set(b.x - 1.1, wy, b.z + 0.6);
+                                this.scene.add(innerLight);
+                            }
+                        }
+                    }
+                    
+                    // PUERTA PRINCIPAL DETALLADA
+                    const doorGeo = new THREE.BoxGeometry(0.6, 2.2, 0.1);
+                    const doorMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x4a3728,
+                        roughness: 0.7,
+                        metalness: 0.3
+                    });
+                    const door = new THREE.Mesh(doorGeo, doorMat);
+                    door.position.set(b.x - 0.95, 1.1, b.z + 0.65);
+                    door.castShadow = true;
+                    this.scene.add(door);
+                    
+                    // Manija
+                    const handleGeo = new THREE.SphereGeometry(0.08, 8, 8);
+                    const handleMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xdaa520,
+                        roughness: 0.3,
+                        metalness: 0.8
+                    });
+                    const handle = new THREE.Mesh(handleGeo, handleMat);
+                    handle.position.set(b.x - 0.4, 1.1, b.z + 0.66);
+                    this.scene.add(handle);
+                    
+                    // Entrada (Lobby Glass)
+                    const lobbyGeo = new THREE.BoxGeometry(1.5, 2.5, 0.05);
+                    const lobbyMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x66ccff,
+                        transparent: true,
+                        opacity: 0.4,
+                        roughness: 0.1,
+                        metalness: 0.7
+                    });
+                    const lobby = new THREE.Mesh(lobbyGeo, lobbyMat);
+                    lobby.position.set(b.x + 0.3, 1.25, b.z + 0.65);
+                    lobby.castShadow = true;
+                    this.scene.add(lobby);
+                    
+                    // CORNISA ELABORADA
+                    const corniceGeo = new THREE.BoxGeometry(2.4, 0.35, 1.45);
+                    const corniceMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x1a1a1a,
+                        roughness: 0.75,
+                        metalness: 0.4
+                    });
+                    const cornice = new THREE.Mesh(corniceGeo, corniceMat);
+                    cornice.position.set(b.x, b.h + 0.175, b.z);
+                    this.scene.add(cornice);
+                    
+                    // Moldura decorativa en cornisa
+                    const moldGeo = new THREE.BoxGeometry(2.6, 0.08, 1.6);
+                    const moldMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 });
+                    const mold = new THREE.Mesh(moldGeo, moldMat);
+                    mold.position.set(b.x, b.h + 0.35, b.z);
+                    this.scene.add(mold);
+                    
+                    // ANTENAS CON LUZ
+                    const antGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.4, 12);
+                    const antMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xff0000,
+                        roughness: 0.6,
+                        metalness: 0.7
+                    });
+                    const antenna = new THREE.Mesh(antGeo, antMat);
+                    antenna.position.set(b.x - 0.4, b.h + 0.8, b.z);
+                    antenna.castShadow = true;
+                    this.scene.add(antenna);
+                    
+                    // Luz roja de antena (blink effect)
+                    const antLight = new THREE.PointLight(0xff0000, 1.5, 20);
+                    antLight.position.set(b.x - 0.4, b.h + 0.8, b.z);
+                    this.scene.add(antLight);
+                    
+                    // TEJADO CON DETALLE
+                    const roofGeo = new THREE.BoxGeometry(2.4, 0.4, 1.5);
+                    const roofMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 });
+                    const roof = new THREE.Mesh(roofGeo, roofMat);
+                    roof.position.set(b.x, b.h + 0.2, b.z);
+                    this.scene.add(roof);
+                });
+
+                // TIMES SQUARE - SUPER DETALLADO 4K
+                const timesSquareBuildings = [
+                    { h: 10.0, x: 6.2, z: -11, color: 0xff4444 },
+                    { h: 12.0, x: 8.0, z: -7, color: 0xff6633 },
+                    { h: 11.0, x: 9.6, z: -3, color: 0xffaa00 }
+                ];
+                
+                timesSquareBuildings.forEach((b) => {
+                    // Edificio base
+                    const buildGeo = new THREE.BoxGeometry(2.4, b.h, 1.3);
+                    const buildMat = new THREE.MeshStandardMaterial({ 
+                        color: b.color, 
+                        roughness: 0.5,
+                        metalness: 0.3,
+                        envMapIntensity: 1.2
+                    });
+                    const building = new THREE.Mesh(buildGeo, buildMat);
+                    building.position.set(b.x, b.h / 2, b.z);
                     building.castShadow = true;
                     building.receiveShadow = true;
                     this.scene.add(building);
                     
                     // Windows ultra-detalladas
-                    const winGeo = new THREE.PlaneGeometry(0.22, 0.22);
-                    const winMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xffffff, 
-                        emissive: 0xffffff, 
-                        emissiveIntensity: 0.95,
-                        roughness: 0.2,
-                        metalness: 0.15
-                    });
-                    
-                    for (let wx = -0.9; wx <= 0.9; wx += 0.3) {
-                        for (let wy = 0.4; wy < bldg.height - 0.3; wy += 0.35) {
-                            const win = new THREE.Mesh(winGeo, winMat);
-                            win.position.set(bldg.x + 1.1, wy, bldg.z + 0.61);
-                            this.scene.add(win);
-                            
+                    for (let wx = -0.9; wx <= 0.9; wx += 0.32) {
+                        for (let wy = 0.5; wy < b.h - 0.3; wy += 0.38) {
                             // Marco
                             const frameGeo = new THREE.PlaneGeometry(0.26, 0.26);
-                            const frameMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                            const frameMat = new THREE.MeshStandardMaterial({ 
+                                color: 0x222222,
+                                roughness: 0.8,
+                                metalness: 0.2
+                            });
                             const frame = new THREE.Mesh(frameGeo, frameMat);
-                            frame.position.set(bldg.x + 1.11, wy, bldg.z + 0.60);
+                            frame.position.set(b.x + 1.2, wy, b.z + 0.66);
+                            frame.castShadow = true;
                             this.scene.add(frame);
+                            
+                            // Vidrio blanco brillante
+                            const glassGeo = new THREE.PlaneGeometry(0.22, 0.22);
+                            const glassMat = new THREE.MeshStandardMaterial({ 
+                                color: 0xffffff, 
+                                emissive: 0xffffff, 
+                                emissiveIntensity: 1.0,
+                                roughness: 0.15,
+                                metalness: 0.1,
+                                transparent: true,
+                                opacity: 0.85
+                            });
+                            const glass = new THREE.Mesh(glassGeo, glassMat);
+                            glass.position.set(b.x + 1.2, wy, b.z + 0.65);
+                            this.scene.add(glass);
                         }
                     }
                     
-                    // Cornisa
-                    const corniceGeo = new THREE.BoxGeometry(2.4, 0.3, 1.4);
-                    const corniceMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
-                    const cornice = new THREE.Mesh(corniceGeo, corniceMat);
-                    cornice.position.set(bldg.x, bldg.height + 0.15, bldg.z);
-                    this.scene.add(cornice);
-                    
-                    // Balcones/Terraza
-                    const balconyGeo = new THREE.BoxGeometry(2.4, 0.15, 0.8);
-                    const balconyMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 });
-                    for (let balc = 2; balc < bldg.height; balc += 2.5) {
+                    // BALCONES DECORATIVOS
+                    for (let balc = 2.5; balc < b.h; balc += 2.5) {
+                        const balconyGeo = new THREE.BoxGeometry(2.5, 0.2, 0.9);
+                        const balconyMat = new THREE.MeshStandardMaterial({ 
+                            color: 0x1a1a1a,
+                            roughness: 0.7,
+                            metalness: 0.6
+                        });
                         const balcony = new THREE.Mesh(balconyGeo, balconyMat);
-                        balcony.position.set(bldg.x, balc, bldg.z + 0.65);
+                        balcony.position.set(b.x, balc, b.z + 0.7);
+                        balcony.castShadow = true;
                         this.scene.add(balcony);
+                        
+                        // Barandal
+                        const railingGeo = new THREE.BoxGeometry(2.5, 0.1, 0.05);
+                        const railingMat = new THREE.MeshStandardMaterial({ 
+                            color: 0x666666,
+                            metalness: 0.8
+                        });
+                        const railing = new THREE.Mesh(railingGeo, railingMat);
+                        railing.position.set(b.x, balc + 0.1, b.z + 0.75);
+                        this.scene.add(railing);
                     }
                     
-                    // Billboard LED gigante
-                    const billboardGeo = new THREE.PlaneGeometry(2.0, 0.8);
+                    // ENTRADA PRINCIPAL FUTURISTA
+                    const entranceGeo = new THREE.BoxGeometry(2.0, 3.0, 0.08);
+                    const entranceMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x00ffff,
+                        transparent: true,
+                        opacity: 0.5,
+                        emissive: 0x00ff00,
+                        emissiveIntensity: 0.4,
+                        roughness: 0.05,
+                        metalness: 0.9
+                    });
+                    const entrance = new THREE.Mesh(entranceGeo, entranceMat);
+                    entrance.position.set(b.x, 1.5, b.z + 0.66);
+                    this.scene.add(entrance);
+                    
+                    // Luz en entrada
+                    const entranceLight = new THREE.PointLight(0x00ff00, 2.0, 15);
+                    entranceLight.position.set(b.x, 1.5, b.z + 1.0);
+                    this.scene.add(entranceLight);
+                    
+                    // BILLBOARD LED GIGANTE
+                    const billboardGeo = new THREE.PlaneGeometry(2.2, 1.0);
                     const billboardMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x00ff00, 
-                        emissive: 0x00ff00, 
-                        emissiveIntensity: 0.8,
-                        roughness: 0.15
+                        color: 0x00ffff, 
+                        emissive: 0x00ffff, 
+                        emissiveIntensity: 0.95,
+                        roughness: 0.1,
+                        metalness: 0.2
                     });
                     const billboard = new THREE.Mesh(billboardGeo, billboardMat);
-                    billboard.position.set(bldg.x, bldg.height - 1.2, bldg.z + 0.61);
+                    billboard.position.set(b.x, b.h - 1.5, b.z + 0.66);
                     this.scene.add(billboard);
                     
-                    // Luz del billboard
-                    const billLight = new THREE.PointLight(0x00ff00, 2.0, 18);
-                    billLight.position.set(bldg.x, bldg.height - 1.2, bldg.z + 1);
-                    this.scene.add(billLight);
+                    // Luces múltiples del billboard
+                    for (let bl = 0; bl < 3; bl++) {
+                        const billLight = new THREE.PointLight(0x00ffff, 2.2, 20);
+                        billLight.position.set(b.x + (bl - 1) * 0.7, b.h - 1.5, b.z + 1.0);
+                        this.scene.add(billLight);
+                    }
+                    
+                    // CORNISA CON MOLDURAS
+                    const corniceGeo = new THREE.BoxGeometry(2.6, 0.4, 1.5);
+                    const corniceMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x1a1a1a,
+                        roughness: 0.7,
+                        metalness: 0.5
+                    });
+                    const cornice = new THREE.Mesh(corniceGeo, corniceMat);
+                    cornice.position.set(b.x, b.h + 0.2, b.z);
+                    this.scene.add(cornice);
+                    
+                    // Moldura decorativa
+                    const moldGeo = new THREE.BoxGeometry(2.8, 0.1, 1.7);
+                    const moldMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xffcc00,
+                        metalness: 0.95,
+                        roughness: 0.1
+                    });
+                    const mold = new THREE.Mesh(moldGeo, moldMat);
+                    mold.position.set(b.x, b.h + 0.4, b.z);
+                    this.scene.add(mold);
+                    
+                    // TEJADO CON LUCES
+                    const roofGeo = new THREE.BoxGeometry(2.6, 0.5, 1.5);
+                    const roofMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x0a0a0a,
+                        roughness: 0.85,
+                        metalness: 0.3
+                    });
+                    const roof = new THREE.Mesh(roofGeo, roofMat);
+                    roof.position.set(b.x, b.h + 0.25, b.z);
+                    this.scene.add(roof);
                 });
-
-                // TAXIS AMARILLOS DE NYC - MÁS DETALLADOS
-                for (let i = 0; i < 4; i++) {
-                    const taxiGeo = new THREE.BoxGeometry(0.6, 0.4, 1.2);
-                    const taxiMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xffdd00, 
-                        roughness: 0.4,
-                        metalness: 0.5
-                    });
-                    const taxi = new THREE.Mesh(taxiGeo, taxiMat);
-                    taxi.position.set(-7.5 - i * 0.9, 0.2, 7.5 + i * 1.3);
-                    taxi.castShadow = true;
-                    taxi.receiveShadow = true;
-                    this.scene.add(taxi);
-                    
-                    // Cabina oscura
-                    const cabinGeo = new THREE.BoxGeometry(0.55, 0.25, 0.8);
-                    const cabinMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-                    const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-                    cabin.position.set(taxi.position.x, taxi.position.y + 0.2, taxi.position.z);
-                    this.scene.add(cabin);
-                    
-                    // Windows
-                    const taxiWinGeo = new THREE.PlaneGeometry(0.3, 0.22);
-                    const taxiWinMat = new THREE.MeshStandardMaterial({ color: 0x4488ff });
-                    const winF = new THREE.Mesh(taxiWinGeo, taxiWinMat);
-                    winF.position.set(taxi.position.x, taxi.position.y + 0.2, taxi.position.z + 0.61);
-                    this.scene.add(winF);
-                    
-                    // Luz de techo
-                    const roofLightGeo = new THREE.BoxGeometry(0.35, 0.15, 0.25);
-                    const roofLightMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xffff00, 
-                        emissive: 0xffff00, 
-                        emissiveIntensity: 0.7 
-                    });
-                    const roofLight = new THREE.Mesh(roofLightGeo, roofLightMat);
-                    roofLight.position.set(taxi.position.x, taxi.position.y + 0.3, taxi.position.z);
-                    this.scene.add(roofLight);
-                    
-                    // Ruedas profesionales
-                    const wheelGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.14, 20);
-                    const wheelMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x111111, 
-                        roughness: 0.7,
-                        metalness: 0.3
-                    });
-                    for (let w = -0.3; w <= 0.3; w += 0.6) {
-                        for (let wz = -0.45; wz <= 0.45; wz += 0.9) {
-                            const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-                            wheel.position.set(taxi.position.x + w, 0.18, taxi.position.z + wz);
-                            this.scene.add(wheel);
-                            
-                            // Aros de rueda
-                            const rimGeo = new THREE.TorusGeometry(0.18, 0.02, 8, 32);
-                            const rimMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
-                            const rim = new THREE.Mesh(rimGeo, rimMat);
-                            rim.position.set(taxi.position.x + w, 0.18, taxi.position.z + wz);
-                            rim.rotation.x = Math.PI / 2;
-                            this.scene.add(rim);
-                        }
-                    }
-                }
-
-                // SEMÁFOROS PROFESIONALES
-                for (let z = -12; z <= 12; z += 8) {
-                    // Poste de metal
-                    const postGeo = new THREE.CylinderGeometry(0.1, 0.12, 4.0, 12);
-                    const postMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x1a1a1a, 
-                        roughness: 0.75,
-                        metalness: 0.4
-                    });
-                    const post = new THREE.Mesh(postGeo, postMat);
-                    post.position.set(-6.8, 2.0, z);
-                    post.castShadow = true;
-                    this.scene.add(post);
-                    
-                    // Caja de semáforo premium
-                    const lightBoxGeo = new THREE.BoxGeometry(0.35, 0.95, 0.22);
-                    const lightBoxMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85 });
-                    const lightBox = new THREE.Mesh(lightBoxGeo, lightBoxMat);
-                    lightBox.position.set(-6.8, 3.2, z);
-                    lightBox.castShadow = true;
-                    this.scene.add(lightBox);
-                    
-                    // Luz roja con frame
-                    const redFrameGeo = new THREE.PlaneGeometry(0.28, 0.28);
-                    const redFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-                    const redFrame = new THREE.Mesh(redFrameGeo, redFrameMat);
-                    redFrame.position.set(-6.8, 3.5, z - 0.12);
-                    this.scene.add(redFrame);
-                    
-                    const redGeo = new THREE.SphereGeometry(0.085, 16, 16);
-                    const redMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xff0000, 
-                        emissive: 0xff0000, 
-                        emissiveIntensity: 1.2,
-                        roughness: 0.3
-                    });
-                    const redLight = new THREE.Mesh(redGeo, redMat);
-                    redLight.position.set(-6.8, 3.5, z - 0.1);
-                    this.scene.add(redLight);
-                    const redPL = new THREE.PointLight(0xff0000, 2.0, 14);
-                    redPL.position.copy(redLight.position);
-                    this.scene.add(redPL);
-                    
-                    // Luz verde
-                    const greenFrameGeo = new THREE.PlaneGeometry(0.28, 0.28);
-                    const greenFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-                    const greenFrame = new THREE.Mesh(greenFrameGeo, greenFrameMat);
-                    greenFrame.position.set(-6.8, 2.85, z - 0.12);
-                    this.scene.add(greenFrame);
-                    
-                    const greenGeo = new THREE.SphereGeometry(0.085, 16, 16);
-                    const greenMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x00ff00, 
-                        emissive: 0x00ff00, 
-                        emissiveIntensity: 1.0,
-                        roughness: 0.3
-                    });
-                    const greenLight = new THREE.Mesh(greenGeo, greenMat);
-                    greenLight.position.set(-6.8, 2.85, z - 0.1);
-                    this.scene.add(greenLight);
-                    const greenPL = new THREE.PointLight(0x00ff00, 1.8, 14);
-                    greenPL.position.copy(greenLight.position);
-                    this.scene.add(greenPL);
-                }
-
-                // HIDRANTES CON DETALLE
-                for (let z = -11; z <= 11; z += 7.5) {
-                    const hydrantGeo = new THREE.CylinderGeometry(0.09, 0.11, 0.65, 12);
-                    const hydrantMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xff0000, 
-                        roughness: 0.5,
-                        metalness: 0.4
-                    });
-                    const hydrant = new THREE.Mesh(hydrantGeo, hydrantMat);
-                    hydrant.position.set(6.2, 0.325, z);
-                    hydrant.castShadow = true;
-                    this.scene.add(hydrant);
-                    
-                    // Cabeza
-                    const capGeo = new THREE.SphereGeometry(0.14, 12, 12);
-                    const capMat = new THREE.MeshStandardMaterial({ color: 0xcc0000, roughness: 0.4, metalness: 0.5 });
-                    const cap = new THREE.Mesh(capGeo, capMat);
-                    cap.position.set(6.2, 0.75, z);
-                    this.scene.add(cap);
-                    
-                    // Nozzles
-                    const nozzleGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.2, 8);
-                    const nozzleMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.7 });
-                    const nozzle = new THREE.Mesh(nozzleGeo, nozzleMat);
-                    nozzle.position.set(6.2 + 0.12, 0.6, z);
-                    nozzle.rotation.z = Math.PI / 3;
-                    this.scene.add(nozzle);
-                }
-
-                // ÁRBOLES CON FOLLAJE DENSO
-                for (let z = -12; z <= 12; z += 8) {
-                    // Maceta grande
-                    const potGeo = new THREE.CylinderGeometry(0.35, 0.42, 0.55, 12);
-                    const potMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x8b6f47, 
-                        roughness: 0.8,
-                        bumpScale: 0.02
-                    });
-                    const pot = new THREE.Mesh(potGeo, potMat);
-                    pot.position.set(6.5, 0.275, z);
-                    pot.castShadow = true;
-                    this.scene.add(pot);
-                    
-                    // Tronco
-                    const trunkGeo = new THREE.CylinderGeometry(0.14, 0.16, 2.0, 12);
-                    const trunkMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x6b4423, 
-                        roughness: 0.95,
-                        bumpScale: 0.01
-                    });
-                    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-                    trunk.position.set(6.5, 1.25, z);
-                    trunk.castShadow = true;
-                    this.scene.add(trunk);
-                    
-                    // Follaje - múltiples esferas
-                    const foliageColors = [0x2d8a2d, 0x3aa83a, 0x2b7a2b];
-                    for (let f = 0; f < 3; f++) {
-                        const foliageGeo = new THREE.SphereGeometry(0.65 - f * 0.15, 12, 12);
-                        const foliageMat = new THREE.MeshStandardMaterial({ 
-                            color: foliageColors[f], 
-                            roughness: 0.85,
-                            bumpScale: 0.02
-                        });
-                        const foliage = new THREE.Mesh(foliageGeo, foliageMat);
-                        foliage.position.set(6.5, 2.4 - f * 0.2, z);
-                        foliage.castShadow = true;
-                        this.scene.add(foliage);
-                    }
-                }
-
-                // FAROLAS LED ULTRA-PROFESIONALES
-                for (let z = -15; z <= 15; z += 6) {
-                    // Poste de aluminio
-                    const poleGeo = new THREE.CylinderGeometry(0.1, 0.13, 4.5, 12);
-                    const poleMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x2a2a2a, 
-                        roughness: 0.7,
-                        metalness: 0.5
-                    });
-                    const pole = new THREE.Mesh(poleGeo, poleMat);
-                    pole.position.set(-9.0, 2.25, z);
-                    pole.castShadow = true;
-                    this.scene.add(pole);
-                    
-                    // Brazo de farola
-                    const armGeo = new THREE.BoxGeometry(0.08, 0.08, 0.8);
-                    const armMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.6 });
-                    const arm = new THREE.Mesh(armGeo, armMat);
-                    arm.position.set(-9.0 + 0.4, 4.2, z);
-                    this.scene.add(arm);
-                    
-                    // Cabezal LED profesional
-                    const headGeo = new THREE.BoxGeometry(0.55, 0.38, 0.45);
-                    const headMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
-                    const head = new THREE.Mesh(headGeo, headMat);
-                    head.position.set(-9.0 + 0.4, 4.2, z);
-                    this.scene.add(head);
-                    
-                    // Luz LED blanca potente
-                    const ledGeo = new THREE.PlaneGeometry(0.5, 0.35);
-                    const ledMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xffffff, 
-                        emissive: 0xffffff, 
-                        emissiveIntensity: 0.8,
-                        roughness: 0.15,
-                        metalness: 0.3
-                    });
-                    const ledPanel = new THREE.Mesh(ledGeo, ledMat);
-                    ledPanel.position.set(-9.0 + 0.4, 4.2, z - 0.23);
-                    this.scene.add(ledPanel);
-                    
-                    // Luz de punto potente
-                    const streetLight = new THREE.PointLight(0xffffff, 2.2, 18);
-                    streetLight.position.set(-9.0 + 0.4, 4.3, z);
-                    streetLight.castShadow = true;
-                    this.scene.add(streetLight);
-                }
 
                 this.animate();
             },
