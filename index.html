@@ -611,25 +611,64 @@
                     <div class="instruction-card"><h4>🃏 Reglas Blackjack</h4><p>Suma 21 o más que el crupier sin pasarte.</p></div>
                 </div>`,
                 chicken: `<div class="glass p-4 text-center">
-                    <div id="chicken-status" class="mb-4 text-emerald-500 font-casino text-2xl animate__animated animate__pulse animate__infinite">1.00x</div>
                     
-                    <div id="chicken-world-container" style="position: relative; width: 100%; height: 200px; border-radius: 1rem; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.15); margin-bottom: 1rem; box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);">
+                    <div id="chicken-world-container" style="position: relative; width: 100%; height: 260px; border-radius: 1rem; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.15); margin-bottom: 1rem; box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);">
                         <div id="chicken-world-3d" style="width: 100%; height: 100%; position: absolute; top:0; left:0;"></div>
-                        <div id="chicken-world-overlay" class="flex" style="position: absolute; top:0; left:0; width: 100%; height: 100%; z-index: 10; pointer-events: none;"></div>
-                    </div>
+                        </div>
 
                     <div id="chicken-controls"><div class="flex justify-between text-[9px] font-black uppercase mb-1 px-2 tracking-wider"><span class="text-emerald-500">Mín: 1.20x</span><span class="text-amber-500">Máx: 100.00x</span></div><input id="chicken-bet-input" type="number" value="3" min="3" class="input-bet"><button onclick="GameLogic.chicken.start()" class="btn-action w-full py-4 font-casino">APOSTAR</button></div>
                     <div id="chicken-actions" class="hidden-view grid grid-cols-2 gap-3 mt-4"><button onclick="GameLogic.chicken.move()" class="btn-action py-5 bg-emerald-500 text-black font-black text-lg">AVANZAR</button><button id="chicken-cashout-btn" onclick="GameLogic.chicken.cashout()" class="btn-action py-5 bg-zinc-800 text-white font-black">COBRAR $0.00</button></div>
-                    <div class="instruction-card"><h4>🐥 Reglas Chicken 3D</h4><p>Cruza los carriles sin ser atropellado por los bloques rojos.</p></div>
+                    <div class="instruction-card"><h4>🐥 Reglas Chicken 3D 4K HD</h4><p>Cruza los carriles sin ser atropellado. Mira los multiplicadores en el asfalto.</p></div>
                 </div>`
             }
         };
 
         // ==========================================
-        // MOTOR 3D PARA CHICKEN ROAD CON THREE.JS (BANQUETA Y LÍNEAS)
+        // MOTOR 3D PARA CHICKEN ROAD CON THREE.JS (VERSIÓN FOTORREALISTA 4K)
         // ==========================================
         const Chicken3D = {
             scene: null, camera: null, renderer: null, chicken: null, cars: [], animationId: null, initialized: false, targetX: -3.98,
+            multiplierMeshes: [], // Almacenar las mallas de texto en el asfalto
+
+            // Helper para generar ruido procedimental básico para texturas (fotorrealismo)
+            generateNoiseTexture(w, h, colorBase) {
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                const imgData = ctx.createImageData(w, h);
+                for (let i = 0; i < imgData.data.length; i += 4) {
+                    const noise = Math.random() * 20 - 10;
+                    imgData.data[i] = colorBase.r + noise;
+                    imgData.data[i+1] = colorBase.g + noise;
+                    imgData.data[i+2] = colorBase.b + noise;
+                    imgData.data[i+3] = 255;
+                }
+                ctx.putImageData(imgData, 0, 0);
+                return new THREE.CanvasTexture(canvas);
+            },
+
+            // Helper para crear mallas de texto en el asfalto
+            createTextMesh(text, color = '#ffffff') {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = color;
+                ctx.font = 'Bold 80px Archivo Black, sans-serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(text, 128, 64);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const mat = new THREE.MeshStandardMaterial({ 
+                    map: texture, transparent: true, opacity: 0.5,
+                    emissive: new THREE.Color(color), emissiveIntensity: 0.1 // Brillo sutil
+                });
+                const geo = new THREE.PlaneGeometry(0.8, 0.4);
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.rotation.x = -Math.PI / 2; // Acostado en el asfalto
+                mesh.position.y = 0.02; // Justo encima
+                return mesh;
+            },
+
             init(containerId) {
                 const container = document.getElementById(containerId);
                 if (!container) return;
@@ -642,7 +681,8 @@
                 this.initialized = true;
 
                 this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x111111);
+                // Cielo Nocturno Fotorrealista (Degradado)
+                this.scene.background = new THREE.Color(0x020617); // Slate 950 muy oscuro
 
                 this.camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
                 this.adjustCamera(container.clientWidth, container.clientHeight);
@@ -650,49 +690,69 @@
                 this.renderer = new THREE.WebGLRenderer({ antialias: true });
                 this.renderer.setSize(container.clientWidth, container.clientHeight);
                 this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Sombras suaves
                 container.appendChild(this.renderer.domElement);
 
-                const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+                // Luces
+                const ambient = new THREE.AmbientLight(0x1e293b, 0.5); // Luz de luna azulada
                 this.scene.add(ambient);
-                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                dirLight.position.set(5, 10, 5);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); // Luz principal (Sol/Luna brillante)
+                dirLight.position.set(5, 10, 8);
                 dirLight.castShadow = true;
+                dirLight.shadow.mapSize.width = 1024; dirLight.shadow.mapSize.height = 1024; // Sombras HD
                 this.scene.add(dirLight);
 
-                // 1. ASFALTO (Carretera principal)
-                const roadGeo = new THREE.PlaneGeometry(20, 30);
-                const roadMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 });
+                // 1. ASFALTO FOTORREALISTA (Carretera principal)
+                const asphaltTex = this.generateNoiseTexture(256, 256, {r: 24, g: 24, b: 27});
+                const roadGeo = new THREE.PlaneGeometry(20, 40);
+                const roadMat = new THREE.MeshStandardMaterial({ map: asphaltTex, roughness: 0.9, metalness: 0.1 });
                 const road = new THREE.Mesh(roadGeo, roadMat);
                 road.rotation.x = -Math.PI / 2;
                 road.receiveShadow = true;
                 this.scene.add(road);
 
-                // 2. BANQUETA (Zona Segura de Inicio)
+                // 2. BANQUETA DETALLADA (Zona Segura de Inicio)
+                const concreteTex = this.generateNoiseTexture(128, 128, {r: 63, g: 63, b: 70});
+                concreteTex.wrapS = concreteTex.wrapT = THREE.RepeatWrapping; concreteTex.repeat.set(1, 15);
                 const sidewalkGeo = new THREE.BoxGeometry(1.6, 0.15, 30);
-                const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 1.0 }); // Gris Cemento
+                const sidewalkMat = new THREE.MeshStandardMaterial({ map: concreteTex, roughness: 1.0 }); // Gris Cemento
                 const sidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
-                // Posicionada exactamente debajo del primer carril UI (INICIO)
                 sidewalk.position.set(-4.1, 0.075, 0); 
                 sidewalk.receiveShadow = true;
                 this.scene.add(sidewalk);
 
-                // 3. LÍNEAS DE LA CARRETERA (Separadores Blancos)
+                // 3. LÍNEAS DE LA CARRETERA HD (Separadores Blancos desgastados)
                 const lineMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.9 });
-                for (let col = 1; col <= 6; col++) { // 6 separadores entre los 6 carriles vehiculares
+                for (let col = 1; col <= 6; col++) { 
                     const separatorX = -3.98 + (col * 1.14) - 0.57; 
-                    for (let z = -15; z <= 15; z += 2.5) {
-                        const dashGeo = new THREE.BoxGeometry(0.06, 0.02, 1.2);
+                    for (let z = -18; z <= 18; z += 2.5) {
+                        const dashGeo = new THREE.BoxGeometry(0.06, 0.015, 1.2);
                         const dash = new THREE.Mesh(dashGeo, lineMat);
-                        dash.position.set(separatorX, 0.01, z); // A ras de piso
+                        dash.position.set(separatorX, 0.01, z); 
                         dash.receiveShadow = true;
                         this.scene.add(dash);
                     }
                 }
 
-                // 4. EL POLLITO DETALLADO (Low-Poly)
+                // 4. CREAR MULTIPLICADORES EN EL ASFALTO (Mapeo 3D de Interfaz)
+                this.multiplierMeshes = [];
+                const multValues = [1.5, 2.2, 4.0, 18.0, 45.0, 100.0];
+                multValues.forEach((val, i) => {
+                    const textMesh = this.createTextMesh(`${val}x`);
+                    const laneIndex3D = i + 1; 
+                    const laneX = -3.98 + (laneIndex3D * 1.14);
+                    textMesh.position.set(laneX, 0.02, 0); // En el centro de la escena para el carril X
+                    this.scene.add(textMesh);
+                    this.multiplierMeshes.push(textMesh);
+                });
+
+                // 5. DETALLAR EDIFICIOS EXTREMADAMENTE (Cityscape Fotorrealista al fondo)
+                this.buildCityscape();
+
+                // 6. EL POLLITO DETALLADO (Low-Poly HD)
                 this.chicken = new THREE.Group();
                 
-                const matBody = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.8 });
+                const matBody = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.8, metalness: 0.1 });
                 const matBeak = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.6 });
                 const matRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5 });
                 const matWhite = new THREE.MeshStandardMaterial({ color: 0xffffff });
@@ -714,15 +774,12 @@
                 pupilR.position.set(0.21, 0.8, 0.32);
                 this.chicken.add(eyeR, pupilR);
 
-                const eyeL = eyeR.clone();
-                eyeL.position.x = -0.2;
-                const pupilL = pupilR.clone();
-                pupilL.position.x = -0.21;
+                const eyeL = eyeR.clone(); eyeL.position.x = -0.2;
+                const pupilL = pupilR.clone(); pupilL.position.x = -0.21;
                 this.chicken.add(eyeL, pupilL);
 
                 const beak = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.2), matBeak);
-                beak.position.set(0, 0.7, 0.5);
-                beak.castShadow = true;
+                beak.position.set(0, 0.7, 0.5); beak.castShadow = true;
                 this.chicken.add(beak);
 
                 const crest = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.3), matRed);
@@ -731,25 +788,17 @@
                 wattle.position.set(0, 0.55, 0.45);
                 this.chicken.add(crest, wattle);
 
-                const wingGeo = new THREE.BoxGeometry(0.1, 0.3, 0.4);
-                const wingR = new THREE.Mesh(wingGeo, matBody);
+                const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 0.4), matBody);
                 wingR.position.set(0.35, 0.4, 0);
-                const wingL = new THREE.Mesh(wingGeo, matBody);
-                wingL.position.set(-0.35, 0.4, 0);
+                const wingL = wingR.clone(); wingL.position.x = -0.35;
                 this.chicken.add(wingR, wingL);
 
                 const legGeo = new THREE.BoxGeometry(0.08, 0.2, 0.08);
                 const footGeo = new THREE.BoxGeometry(0.15, 0.05, 0.2);
-                
-                const legR = new THREE.Mesh(legGeo, matBeak);
-                legR.position.set(0.15, 0.1, 0);
-                const footR = new THREE.Mesh(footGeo, matBeak);
-                footR.position.set(0.15, 0.025, 0.05);
-                
-                const legL = new THREE.Mesh(legGeo, matBeak);
-                legL.position.set(-0.15, 0.1, 0);
-                const footL = new THREE.Mesh(footGeo, matBeak);
-                footL.position.set(-0.15, 0.025, 0.05);
+                const legR = new THREE.Mesh(legGeo, matBeak); legR.position.set(0.15, 0.1, 0);
+                const footR = new THREE.Mesh(footGeo, matBeak); footR.position.set(0.15, 0.025, 0.05);
+                const legL = legR.clone(); legL.position.x = -0.15;
+                const footL = footR.clone(); footL.position.x = -0.15;
                 this.chicken.add(legR, footR, legL, footL);
 
                 // Arranca parado sobre la banqueta
@@ -757,367 +806,76 @@
                 this.chicken.rotation.y = Math.PI / 2; 
                 this.scene.add(this.chicken);
 
-                // =============== MULTIPLICADORES 3D EN CARRILES ===============
-                const multipliers = [1.5, 2.2, 4.0, 18.0, 45.0, 100.0];
-                multipliers.forEach((mult, idx) => {
-                    const laneX = -3.98 + ((idx + 1) * 1.14);
-                    
-                    // Fondo de multiplicador (panel 3D)
-                    const multBackGeo = new THREE.BoxGeometry(0.9, 0.5, 0.05);
-                    const multBackMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x000000, 
-                        roughness: 0.3,
-                        metalness: 0.8,
-                        emissive: 0x001100,
-                        emissiveIntensity: 0.3
-                    });
-                    const multBack = new THREE.Mesh(multBackGeo, multBackMat);
-                    multBack.position.set(laneX, 0.8, 0.2);
-                    multBack.castShadow = true;
-                    this.scene.add(multBack);
-                    
-                    // Canvas para texto del multiplicador
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 256;
-                    canvas.height = 128;
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Fondo
-                    ctx.fillStyle = '#000011';
-                    ctx.fillRect(0, 0, 256, 128);
-                    
-                    // Borde verde neon
-                    ctx.strokeStyle = '#00ff00';
-                    ctx.lineWidth = 8;
-                    ctx.strokeRect(4, 4, 248, 120);
-                    
-                    // Texto
-                    ctx.fillStyle = '#00ff00';
-                    ctx.font = 'bold 80px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(mult.toFixed(2) + 'x', 128, 64);
-                    
-                    // Crear textura
-                    const texture = new THREE.CanvasTexture(canvas);
-                    texture.minFilter = THREE.LinearFilter;
-                    texture.magFilter = THREE.LinearFilter;
-                    
-                    const multGeo = new THREE.PlaneGeometry(0.85, 0.45);
-                    const multMat = new THREE.MeshStandardMaterial({ 
-                        map: texture,
-                        emissive: 0x00ff00,
-                        emissiveIntensity: 0.6,
-                        roughness: 0.1,
-                        metalness: 0.2
-                    });
-                    const multDisplay = new THREE.Mesh(multGeo, multMat);
-                    multDisplay.position.set(laneX, 0.8, 0.22);
-                    multDisplay.castShadow = true;
-                    this.scene.add(multDisplay);
-                    
-                    // Luz alrededor del multiplicador
-                    const multLight = new THREE.PointLight(0x00ff00, 1.5, 8);
-                    multLight.position.set(laneX, 0.8, 0.5);
-                    this.scene.add(multLight);
-                });
+                this.animate();
+            },
+            
+            // Función para construir edificios realistas al fondo
+            buildCityscape() {
+                const cityGroup = new THREE.Group();
+                cityGroup.position.set(0, 0, -15); // Profundidad detrás de la carretera
 
-                // =============== EDIFICIOS ULTRA 4K HD PROFESIONALES ===============
-                
-                // MANHATTAN - SUPER DETALLADO
-                const manhattanBuildings = [
-                    { h: 9.5, x: -7.5, z: -11, color: 0x2c3e50 },
-                    { h: 11.5, x: -9.2, z: -7, color: 0x34495e },
-                    { h: 10.5, x: -10.8, z: -3, color: 0x3d5a73 }
-                ];
-                
-                manhattanBuildings.forEach((b, idx) => {
-                    // Edificio base
-                    const buildGeo = new THREE.BoxGeometry(2.2, b.h, 1.3);
-                    const buildMat = new THREE.MeshStandardMaterial({ 
-                        color: b.color, 
-                        roughness: 0.6,
-                        metalness: 0.2,
-                        envMapIntensity: 1.0
-                    });
-                    const building = new THREE.Mesh(buildGeo, buildMat);
-                    building.position.set(b.x, b.h / 2, b.z);
-                    building.castShadow = true;
-                    building.receiveShadow = true;
-                    this.scene.add(building);
+                const wallColors = [{r:39,g:39,b:42}, {r:24,g:24,b:27}, {r:63,g:63,b:70}]; // Gris Slate oscuros
+                const windowMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xfef08a, emissive: 0xfef08a, emissiveIntensity: 1.5, roughness: 0.1 
+                }); // Ventanas doradas que brillan
+
+                // Generar 12 edificios con detalles
+                for (let i = 0; i < 12; i++) {
+                    const bW = 2 + Math.random() * 2; // Ancho
+                    const bH = 6 + Math.random() * 8; // Alto
+                    const bD = 2 + Math.random() * 2; // Profundidad
                     
-                    // Windows detalladas CON MARCOS
-                    for (let wx = -0.8; wx <= 0.8; wx += 0.32) {
-                        for (let wy = 0.5; wy < b.h - 0.3; wy += 0.38) {
-                            // Marco oscuro (window frame)
-                            const frameGeo = new THREE.PlaneGeometry(0.26, 0.26);
-                            const frameMat = new THREE.MeshStandardMaterial({ 
-                                color: 0x1a1a1a,
-                                roughness: 0.8,
-                                metalness: 0.1
-                            });
-                            const frame = new THREE.Mesh(frameGeo, frameMat);
-                            frame.position.set(b.x - 1.1, wy, b.z + 0.66);
-                            frame.castShadow = true;
-                            this.scene.add(frame);
-                            
-                            // Vidrio luminoso
-                            const glassGeo = new THREE.PlaneGeometry(0.22, 0.22);
-                            const glassMat = new THREE.MeshStandardMaterial({ 
-                                color: 0xffff99, 
-                                emissive: 0xffff88, 
-                                emissiveIntensity: 0.9,
-                                roughness: 0.2,
-                                metalness: 0.05,
-                                transparent: true,
-                                opacity: 0.8
-                            });
-                            const glass = new THREE.Mesh(glassGeo, glassMat);
-                            glass.position.set(b.x - 1.1, wy, b.z + 0.65);
-                            this.scene.add(glass);
-                            
-                            // Detalle interno (punto de luz en ventana)
-                            if (Math.random() > 0.3) {
-                                const innerLight = new THREE.PointLight(0xffff77, 0.3, 1);
-                                innerLight.position.set(b.x - 1.1, wy, b.z + 0.6);
-                                this.scene.add(innerLight);
+                    // Paredes con textura de ruido
+                    const wallTex = this.generateNoiseTexture(128, 128, wallColors[i % 3]);
+                    wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping; wallTex.repeat.set(2, bH/3);
+                    const bMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.8 });
+                    const bGeo = new THREE.BoxGeometry(bW, bH, bD);
+                    const building = new THREE.Mesh(bGeo, bMat);
+                    building.position.set(-12 + i * 2.2, bH/2, Math.random() * 2);
+                    building.castShadow = true; building.receiveShadow = true;
+                    
+                    // Añadir CIENTOS de VENTANAS emisivas (brillo nocturno)
+                    const rows = Math.floor(bH * 1.5);
+                    const cols = Math.floor(bW * 1.5);
+                    const winGeo = new THREE.PlaneGeometry(0.15, 0.25);
+                    
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            // 70% de probabilidad de que la ventana esté encendida
+                            if (Math.random() < 0.7) {
+                                const window = new THREE.Mesh(winGeo, windowMat);
+                                // Posicionar en la cara frontal del edificio
+                                window.position.set(
+                                    -bW/2 + 0.3 + c * (bW-0.6)/(cols-1),
+                                    -bH/2 + 0.5 + r * (bH-1.0)/(rows-1),
+                                    bD/2 + 0.01 // Justo en frente
+                                );
+                                building.add(window);
                             }
                         }
                     }
                     
-                    // PUERTA PRINCIPAL DETALLADA
-                    const doorGeo = new THREE.BoxGeometry(0.6, 2.2, 0.1);
-                    const doorMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x4a3728,
-                        roughness: 0.7,
-                        metalness: 0.3
-                    });
-                    const door = new THREE.Mesh(doorGeo, doorMat);
-                    door.position.set(b.x - 0.95, 1.1, b.z + 0.65);
-                    door.castShadow = true;
-                    this.scene.add(door);
-                    
-                    // Manija
-                    const handleGeo = new THREE.SphereGeometry(0.08, 8, 8);
-                    const handleMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xdaa520,
-                        roughness: 0.3,
-                        metalness: 0.8
-                    });
-                    const handle = new THREE.Mesh(handleGeo, handleMat);
-                    handle.position.set(b.x - 0.4, 1.1, b.z + 0.66);
-                    this.scene.add(handle);
-                    
-                    // Entrada (Lobby Glass)
-                    const lobbyGeo = new THREE.BoxGeometry(1.5, 2.5, 0.05);
-                    const lobbyMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x66ccff,
-                        transparent: true,
-                        opacity: 0.4,
-                        roughness: 0.1,
-                        metalness: 0.7
-                    });
-                    const lobby = new THREE.Mesh(lobbyGeo, lobbyMat);
-                    lobby.position.set(b.x + 0.3, 1.25, b.z + 0.65);
-                    lobby.castShadow = true;
-                    this.scene.add(lobby);
-                    
-                    // CORNISA ELABORADA
-                    const corniceGeo = new THREE.BoxGeometry(2.4, 0.35, 1.45);
-                    const corniceMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x1a1a1a,
-                        roughness: 0.75,
-                        metalness: 0.4
-                    });
-                    const cornice = new THREE.Mesh(corniceGeo, corniceMat);
-                    cornice.position.set(b.x, b.h + 0.175, b.z);
-                    this.scene.add(cornice);
-                    
-                    // Moldura decorativa en cornisa
-                    const moldGeo = new THREE.BoxGeometry(2.6, 0.08, 1.6);
-                    const moldMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 });
-                    const mold = new THREE.Mesh(moldGeo, moldMat);
-                    mold.position.set(b.x, b.h + 0.35, b.z);
-                    this.scene.add(mold);
-                    
-                    // ANTENAS CON LUZ
-                    const antGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.4, 12);
-                    const antMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xff0000,
-                        roughness: 0.6,
-                        metalness: 0.7
-                    });
-                    const antenna = new THREE.Mesh(antGeo, antMat);
-                    antenna.position.set(b.x - 0.4, b.h + 0.8, b.z);
-                    antenna.castShadow = true;
-                    this.scene.add(antenna);
-                    
-                    // Luz roja de antena (blink effect)
-                    const antLight = new THREE.PointLight(0xff0000, 1.5, 20);
-                    antLight.position.set(b.x - 0.4, b.h + 0.8, b.z);
-                    this.scene.add(antLight);
-                    
-                    // TEJADO CON DETALLE
-                    const roofGeo = new THREE.BoxGeometry(2.4, 0.4, 1.5);
-                    const roofMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 });
-                    const roof = new THREE.Mesh(roofGeo, roofMat);
-                    roof.position.set(b.x, b.h + 0.2, b.z);
-                    this.scene.add(roof);
-                });
+                    // Detalles en el techo (antenas procedimentales)
+                    if (Math.random() < 0.5) {
+                        const antennaGeo = new THREE.CylinderGeometry(0.02, 0.02, 1);
+                        const antennaMat = new THREE.MeshStandardMaterial({ color: 0x52525b });
+                        const antenna = new THREE.Mesh(antennaGeo, antennaMat);
+                        antenna.position.set(Math.random()*bW - bW/2, bH/2 + 0.5, Math.random()*bD - bD/2);
+                        building.add(antenna);
+                    }
 
-                // TIMES SQUARE - SUPER DETALLADO 4K
-                const timesSquareBuildings = [
-                    { h: 10.0, x: 6.2, z: -11, color: 0xff4444 },
-                    { h: 12.0, x: 8.0, z: -7, color: 0xff6633 },
-                    { h: 11.0, x: 9.6, z: -3, color: 0xffaa00 }
-                ];
+                    cityGroup.add(building);
+                }
                 
-                timesSquareBuildings.forEach((b) => {
-                    // Edificio base
-                    const buildGeo = new THREE.BoxGeometry(2.4, b.h, 1.3);
-                    const buildMat = new THREE.MeshStandardMaterial({ 
-                        color: b.color, 
-                        roughness: 0.5,
-                        metalness: 0.3,
-                        envMapIntensity: 1.2
-                    });
-                    const building = new THREE.Mesh(buildGeo, buildMat);
-                    building.position.set(b.x, b.h / 2, b.z);
-                    building.castShadow = true;
-                    building.receiveShadow = true;
-                    this.scene.add(building);
-                    
-                    // Windows ultra-detalladas
-                    for (let wx = -0.9; wx <= 0.9; wx += 0.32) {
-                        for (let wy = 0.5; wy < b.h - 0.3; wy += 0.38) {
-                            // Marco
-                            const frameGeo = new THREE.PlaneGeometry(0.26, 0.26);
-                            const frameMat = new THREE.MeshStandardMaterial({ 
-                                color: 0x222222,
-                                roughness: 0.8,
-                                metalness: 0.2
-                            });
-                            const frame = new THREE.Mesh(frameGeo, frameMat);
-                            frame.position.set(b.x + 1.2, wy, b.z + 0.66);
-                            frame.castShadow = true;
-                            this.scene.add(frame);
-                            
-                            // Vidrio blanco brillante
-                            const glassGeo = new THREE.PlaneGeometry(0.22, 0.22);
-                            const glassMat = new THREE.MeshStandardMaterial({ 
-                                color: 0xffffff, 
-                                emissive: 0xffffff, 
-                                emissiveIntensity: 1.0,
-                                roughness: 0.15,
-                                metalness: 0.1,
-                                transparent: true,
-                                opacity: 0.85
-                            });
-                            const glass = new THREE.Mesh(glassGeo, glassMat);
-                            glass.position.set(b.x + 1.2, wy, b.z + 0.65);
-                            this.scene.add(glass);
-                        }
-                    }
-                    
-                    // BALCONES DECORATIVOS
-                    for (let balc = 2.5; balc < b.h; balc += 2.5) {
-                        const balconyGeo = new THREE.BoxGeometry(2.5, 0.2, 0.9);
-                        const balconyMat = new THREE.MeshStandardMaterial({ 
-                            color: 0x1a1a1a,
-                            roughness: 0.7,
-                            metalness: 0.6
-                        });
-                        const balcony = new THREE.Mesh(balconyGeo, balconyMat);
-                        balcony.position.set(b.x, balc, b.z + 0.7);
-                        balcony.castShadow = true;
-                        this.scene.add(balcony);
-                        
-                        // Barandal
-                        const railingGeo = new THREE.BoxGeometry(2.5, 0.1, 0.05);
-                        const railingMat = new THREE.MeshStandardMaterial({ 
-                            color: 0x666666,
-                            metalness: 0.8
-                        });
-                        const railing = new THREE.Mesh(railingGeo, railingMat);
-                        railing.position.set(b.x, balc + 0.1, b.z + 0.75);
-                        this.scene.add(railing);
-                    }
-                    
-                    // ENTRADA PRINCIPAL FUTURISTA
-                    const entranceGeo = new THREE.BoxGeometry(2.0, 3.0, 0.08);
-                    const entranceMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x00ffff,
-                        transparent: true,
-                        opacity: 0.5,
-                        emissive: 0x00ff00,
-                        emissiveIntensity: 0.4,
-                        roughness: 0.05,
-                        metalness: 0.9
-                    });
-                    const entrance = new THREE.Mesh(entranceGeo, entranceMat);
-                    entrance.position.set(b.x, 1.5, b.z + 0.66);
-                    this.scene.add(entrance);
-                    
-                    // Luz en entrada
-                    const entranceLight = new THREE.PointLight(0x00ff00, 2.0, 15);
-                    entranceLight.position.set(b.x, 1.5, b.z + 1.0);
-                    this.scene.add(entranceLight);
-                    
-                    // BILLBOARD LED GIGANTE
-                    const billboardGeo = new THREE.PlaneGeometry(2.2, 1.0);
-                    const billboardMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x00ffff, 
-                        emissive: 0x00ffff, 
-                        emissiveIntensity: 0.95,
-                        roughness: 0.1,
-                        metalness: 0.2
-                    });
-                    const billboard = new THREE.Mesh(billboardGeo, billboardMat);
-                    billboard.position.set(b.x, b.h - 1.5, b.z + 0.66);
-                    this.scene.add(billboard);
-                    
-                    // Luces múltiples del billboard
-                    for (let bl = 0; bl < 3; bl++) {
-                        const billLight = new THREE.PointLight(0x00ffff, 2.2, 20);
-                        billLight.position.set(b.x + (bl - 1) * 0.7, b.h - 1.5, b.z + 1.0);
-                        this.scene.add(billLight);
-                    }
-                    
-                    // CORNISA CON MOLDURAS
-                    const corniceGeo = new THREE.BoxGeometry(2.6, 0.4, 1.5);
-                    const corniceMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x1a1a1a,
-                        roughness: 0.7,
-                        metalness: 0.5
-                    });
-                    const cornice = new THREE.Mesh(corniceGeo, corniceMat);
-                    cornice.position.set(b.x, b.h + 0.2, b.z);
-                    this.scene.add(cornice);
-                    
-                    // Moldura decorativa
-                    const moldGeo = new THREE.BoxGeometry(2.8, 0.1, 1.7);
-                    const moldMat = new THREE.MeshStandardMaterial({ 
-                        color: 0xffcc00,
-                        metalness: 0.95,
-                        roughness: 0.1
-                    });
-                    const mold = new THREE.Mesh(moldGeo, moldMat);
-                    mold.position.set(b.x, b.h + 0.4, b.z);
-                    this.scene.add(mold);
-                    
-                    // TEJADO CON LUCES
-                    const roofGeo = new THREE.BoxGeometry(2.6, 0.5, 1.5);
-                    const roofMat = new THREE.MeshStandardMaterial({ 
-                        color: 0x0a0a0a,
-                        roughness: 0.85,
-                        metalness: 0.3
-                    });
-                    const roof = new THREE.Mesh(roofGeo, roofMat);
-                    roof.position.set(b.x, b.h + 0.25, b.z);
-                    this.scene.add(roof);
-                });
+                this.scene.add(cityGroup);
 
-                this.animate();
+                // Añadir una LUNA fotorrealista al fondo
+                const moonGeo = new THREE.CircleGeometry(2, 32);
+                const moonTex = this.generateNoiseTexture(128, 128, {r: 254, g: 250, b: 220});
+                const moonMat = new THREE.MeshBasicMaterial({ map: moonTex, transparent: true, opacity: 0.9 });
+                const moon = new THREE.Mesh(moonGeo, moonMat);
+                moon.position.set(10, 15, -20);
+                this.scene.add(moon);
             },
             
             adjustCamera(w, h) {
@@ -1137,6 +895,10 @@
                 }
                 this.cars.forEach(c => this.scene.remove(c.mesh));
                 this.cars = [];
+                // Resetear color de multiplicadores 3D
+                this.multiplierMeshes.forEach(mesh => {
+                    mesh.material.emissive.set('#ffffff'); mesh.material.emissiveIntensity = 0.1;
+                });
             },
 
             setLane(laneIndex) {
@@ -1146,10 +908,9 @@
             },
 
             jumpToEnd(callback) {
-                // El pollo salta a la banqueta final (después de los 6 carriles)
-                this.targetX = -3.98 + (7 * 1.14); // 7 posiciones: banqueta inicial + 6 carriles
+                this.targetX = -3.98 + (7 * 1.14); 
                 let jumpProgress = 0;
-                const jumpDuration = 0.8; // 0.8 segundos para el salto
+                const jumpDuration = 0.8; 
                 const startTime = Date.now();
                 
                 const jumpAnimation = () => {
@@ -1157,11 +918,7 @@
                     jumpProgress = Math.min(elapsed / jumpDuration, 1);
                     
                     if(this.chicken) {
-                        // Interpolar la posición X
-                        const currentX = -3.98 + (6.5 * 1.14 * jumpProgress) + (-3.98 + (6.5 * 1.14) * (1 - jumpProgress));
                         this.chicken.position.x += (this.targetX - this.chicken.position.x) * 0.15;
-                        
-                        // Hacer un arco de salto en Y
                         const jumpHeight = Math.sin(jumpProgress * Math.PI) * 0.5;
                         this.chicken.position.y = 0.15 + jumpHeight;
                     }
@@ -1169,13 +926,10 @@
                     if(jumpProgress < 1) {
                         requestAnimationFrame(jumpAnimation);
                     } else {
-                        if(this.chicken) {
-                            this.chicken.position.y = 0.15; // Volver a posición normal
-                        }
+                        if(this.chicken) this.chicken.position.y = 0.15; 
                         if(callback) callback();
                     }
                 };
-                
                 jumpAnimation();
             },
 
@@ -1188,53 +942,37 @@
                 const lightBackMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 
                 const chasis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 3.0), bodyMat);
-                chasis.position.y = 0.3;
-                chasis.castShadow = true;
-                carGroup.add(chasis);
+                chasis.position.y = 0.3; chasis.castShadow = true; carGroup.add(chasis);
 
                 const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 1.6), glassMat);
-                cabin.position.set(0, 0.7, -0.2);
-                cabin.castShadow = true;
-                carGroup.add(cabin);
+                cabin.position.set(0, 0.7, -0.2); cabin.castShadow = true; carGroup.add(cabin);
                 
                 const roof = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.05, 1.62), bodyMat);
-                roof.position.set(0, 0.925, -0.2);
-                carGroup.add(roof);
+                roof.position.set(0, 0.925, -0.2); carGroup.add(roof);
 
                 const wheelGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.2, 16);
                 wheelGeo.rotateZ(Math.PI / 2);
-                const wheelPositions = [
-                    [-0.8, 0.25, 1.0], [0.8, 0.25, 1.0],
-                    [-0.8, 0.25, -1.0], [0.8, 0.25, -1.0]
-                ];
+                const wheelPositions = [[-0.8, 0.25, 1.0], [0.8, 0.25, 1.0], [-0.8, 0.25, -1.0], [0.8, 0.25, -1.0]];
                 wheelPositions.forEach(pos => {
                     const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-                    wheel.position.set(...pos);
-                    wheel.castShadow = true;
-                    carGroup.add(wheel);
+                    wheel.position.set(...pos); wheel.castShadow = true; carGroup.add(wheel);
                 });
 
                 const headlightGeo = new THREE.BoxGeometry(0.3, 0.15, 0.1);
-                const hlR = new THREE.Mesh(headlightGeo, lightFrontMat);
-                hlR.position.set(0.5, 0.35, 1.51);
-                const hlL = new THREE.Mesh(headlightGeo, lightFrontMat);
-                hlL.position.set(-0.5, 0.35, 1.51);
+                const hlR = new THREE.Mesh(headlightGeo, lightFrontMat); hlR.position.set(0.5, 0.35, 1.51);
+                const hlL = hlR.clone(); hlL.position.x = -0.5;
                 carGroup.add(hlR, hlL);
 
                 const taillightGeo = new THREE.BoxGeometry(0.4, 0.1, 0.1);
-                const tlR = new THREE.Mesh(taillightGeo, lightBackMat);
-                tlR.position.set(0.5, 0.35, -1.51);
-                const tlL = new THREE.Mesh(taillightGeo, lightBackMat);
-                tlL.position.set(-0.5, 0.35, -1.51);
+                const tlR = new THREE.Mesh(taillightGeo, lightBackMat); tlR.position.set(0.5, 0.35, -1.51);
+                const tlL = tlR.clone(); tlL.position.x = -0.5;
                 carGroup.add(tlR, tlL);
 
                 carGroup.scale.set(0.42, 0.42, 0.42);
-                
                 const laneIndex3D = laneIndex + 1;
                 const laneX = -3.98 + (laneIndex3D * 1.14);
                 carGroup.position.set(laneX, 0, -12);
                 this.scene.add(carGroup);
-                
                 this.cars.push({ mesh: carGroup, speed: 0.6, cb: callback, hit: false });
             },
 
@@ -1245,9 +983,8 @@
                     this.chicken.position.x += (this.targetX - this.chicken.position.x) * 0.15;
                     
                     if (this.chicken.scale.y < 0.5) {
-                        this.chicken.position.y = 0; // Se queda pegado al asfalto si pierde
+                        this.chicken.position.y = 0; 
                     } else {
-                        // Calcula si el pollo está sobre la banqueta (X < -3.41) para subir su altura base a 0.15
                         let baseY = (this.chicken.position.x < -3.41) ? 0.15 : 0;
                         this.chicken.position.y = baseY + Math.abs(Math.sin((this.chicken.position.x - this.targetX) * Math.PI)) * 0.7;
                     }
@@ -1434,38 +1171,11 @@
             },
             chicken: {
                 pos: -1, active: false, bet: 0, 
-                // Eliminamos 1.2x. Ahora son 7 multiplicadores.
                 mults: [1.5, 2.2, 4.0, 18.0, 45.0, 100.0], 
                 moving: false,
                 
                 init() { 
-                    const overlay = document.getElementById('chicken-world-overlay'); 
-                    if(!overlay) return; 
-                    overlay.innerHTML = ''; 
-                    
-                    // 1. Carril de Banqueta (INICIO)
-                    const startLane = document.createElement('div'); 
-                    startLane.className = "flex-1 border-r border-solid border-zinc-500/30 flex flex-col items-center justify-end pb-2 relative transition-all duration-300 bg-white/5"; 
-                    startLane.innerHTML = `<span class="text-[8px] font-black text-white/50 uppercase z-20">INICIO</span>`; 
-                    startLane.id = `lane-ui--1`; 
-                    overlay.appendChild(startLane);
-
-                    // 2. Carriles Vehiculares (Multiplicadores)
-                    this.mults.forEach((m, i) => { 
-                        const lane = document.createElement('div'); 
-                        lane.className = "flex-1 border-r border-dashed border-emerald-500/20 flex flex-col items-center justify-end pb-2 relative transition-all duration-300"; 
-                        lane.innerHTML = `<span class="text-[8px] font-black text-white/30 uppercase z-20">${m}x</span>`; 
-                        lane.id = `lane-ui-${i}`; 
-                        overlay.appendChild(lane); 
-                    });
-                    
-                    // 3. Carril de Banqueta Final (LLEGADA)
-                    const endLane = document.createElement('div'); 
-                    endLane.className = "flex-1 border-solid border-zinc-500/30 flex flex-col items-center justify-end pb-2 relative transition-all duration-300 bg-white/5"; 
-                    endLane.innerHTML = `<span class="text-[8px] font-black text-white/50 uppercase z-20">LLEGADA</span>`; 
-                    endLane.id = `lane-ui-end`; 
-                    overlay.appendChild(endLane);
-                    
+                    // YA NO SE CONSTRUYE OVERLAY HTML
                     Chicken3D.init('chicken-world-3d');
                     this.updateHero(); 
                 },
@@ -1486,44 +1196,43 @@
                     
                     document.getElementById('chicken-controls').classList.add('hidden-view'); 
                     document.getElementById('chicken-actions').classList.remove('hidden-view'); 
-                    document.getElementById('chicken-cashout-btn').innerText = `COBRAR $${b.toFixed(2)}`; 
                     
                     Chicken3D.reset();
                     this.init(); 
+                    document.getElementById('chicken-cashout-btn').innerText = `COBRAR $${this.bet.toFixed(2)}`; 
+                    document.getElementById('chicken-cashout-btn').disabled = true; // No cobrar en banqueta inicio
+                    
                     State.isProcessing = false; 
                 },
                 updateHero(isDead = false) { 
                     Chicken3D.setLane(this.pos);
 
-                    // Iteramos desde -1 (Banqueta) hasta el último carril
-                    for(let i = -1; i < this.mults.length; i++) {
-                        const l = document.getElementById(`lane-ui-${i}`);
-                        if(l) {
-                            l.classList.remove(
-                                'bg-emerald-500/20', 'bg-emerald-500/5', 'shadow-[inset_0_0_10px_rgba(16,185,129,0.5)]',
-                                'bg-red-500/20', 'shadow-[inset_0_0_10px_rgba(239,68,68,0.5)]',
-                                'bg-white/5'
-                            );
-                            
-                            if(i === this.pos) {
-                                if (isDead) {
-                                    l.classList.add('bg-red-500/20', 'shadow-[inset_0_0_10px_rgba(239,68,68,0.5)]');
-                                } else {
-                                    if (i === -1) {
-                                        l.classList.add('bg-white/5'); // Sombra sutil a la banqueta actual
-                                    } else {
-                                        l.classList.add('bg-emerald-500/20', 'shadow-[inset_0_0_10px_rgba(16,185,129,0.5)]');
-                                    }
-                                }
-                            } else if (i < this.pos) {
-                                if (i === -1) {
-                                    l.classList.add('bg-white/5'); // La banqueta se mantiene grisácea si ya la pasaste
-                                } else {
-                                    l.classList.add('bg-emerald-500/5'); // Carriles superados se ponen verde claro
-                                }
+                    // Actualizar Iluminación de los Multiplicadores 3D en el asfalto
+                    Chicken3D.multiplierMesMeshes.forEach((mesh, i) => {
+                        // Limpiar estados
+                        mesh.material.emissive.set('#ffffff');
+                        mesh.material.emissiveIntensity = 0.1;
+                        mesh.material.opacity = 0.5;
+
+                        if (i === this.pos) {
+                            if (isDead) {
+                                // Perdió: Carril actual en ROJO brillante
+                                mesh.material.emissive.set('#ef4444');
+                                mesh.material.emissiveIntensity = 2.0;
+                                mesh.material.opacity = 1.0;
+                            } else {
+                                // Vivo: Carril actual en VERDE brillante
+                                mesh.material.emissive.set('#10b981');
+                                mesh.material.emissiveIntensity = 2.0;
+                                mesh.material.opacity = 1.0;
                             }
+                        } else if (i < this.pos) {
+                            // Carriles superados: Verde tenue
+                            mesh.material.emissive.set('#10b981');
+                            mesh.material.emissiveIntensity = 0.3;
+                            mesh.material.opacity = 0.7;
                         }
-                    }
+                    });
                 },
                 move() { 
                     if(!this.active || State.isProcessing || this.moving) return; 
@@ -1533,10 +1242,11 @@
                     this.pos++; 
                     
                     let risk = (0.15 + (this.pos * 0.15)) / GlobalLuck.luckFactor; 
-                    if (this.pos === this.mults.length - 1) risk = 0.98; // Último carril garantiza alta probabilidad de perder si lo intentas
+                    if (this.pos === this.mults.length - 1) risk = 0.98; 
                     else risk = Math.min(risk, 0.96); 
                     
                     if(Math.random() < risk) { 
+                        // PIERDE: Saltar al carril y ejecutar muerte en rojo
                         this.updateHero(true); 
 
                         Chicken3D.spawnCar(this.pos, () => {
@@ -1549,28 +1259,27 @@
                             }, 1000);
                         });
                     } else { 
+                        // GANA el salto
                         playSfx('click'); 
                         this.updateHero(false); 
                         const m = this.mults[this.pos]; 
-                        document.getElementById('chicken-status').innerText = m.toFixed(2) + 'x'; 
+                        
                         if(cBtn) { 
                             cBtn.innerText = `COBRAR $${(this.bet * m).toFixed(2)}`; 
                             cBtn.disabled = false; 
                         } 
                         this.moving = false; 
                         
-                        // Si llega al final exitosamente (100x), hace salto automático a banqueta final
                         if(this.pos === this.mults.length - 1) {
                             this.moving = true;
                             if(cBtn) cBtn.disabled = true;
                             playSfx('win');
                             playSfx('winExtra');
                             
-                            // El pollo salta a la banqueta final
                             Chicken3D.jumpToEnd(() => {
                                 setTimeout(() => {
                                     this.cashout();
-                                }, 1000); // Espera 1 segundo en la banqueta final
+                                }, 1000); 
                             });
                         }
                     } 
@@ -1599,7 +1308,6 @@
                         if (document.getElementById('view-game').classList.contains('hidden-view')) return; 
                         document.getElementById('chicken-controls').classList.remove('hidden-view'); 
                         document.getElementById('chicken-actions').classList.add('hidden-view'); 
-                        document.getElementById('chicken-status').innerText = '1.00x'; 
                         Chicken3D.reset();
                         this.pos = -1;
                         this.updateHero();
