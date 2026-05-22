@@ -626,16 +626,17 @@
         };
 
         // ==========================================
-        // MOTOR 3D PARA CHICKEN ROAD CON THREE.JS (VERSIÓN DETALLADA)
+        // MOTOR 3D PARA CHICKEN ROAD CON THREE.JS (CORREGIDO Y SINCRONIZADO)
         // ==========================================
         const Chicken3D = {
-            scene: null, camera: null, renderer: null, chicken: null, cars: [], animationId: null, initialized: false, targetX: -4.5,
+            scene: null, camera: null, renderer: null, chicken: null, cars: [], animationId: null, initialized: false, targetX: -4.7,
             init(containerId) {
                 const container = document.getElementById(containerId);
                 if (!container) return;
                 
                 if (this.initialized) {
                     if (this.renderer) this.renderer.setSize(container.clientWidth, container.clientHeight);
+                    this.adjustCamera(container.clientWidth, container.clientHeight);
                     return;
                 }
                 this.initialized = true;
@@ -644,10 +645,9 @@
                 this.scene = new THREE.Scene();
                 this.scene.background = new THREE.Color(0x111111);
 
-                // 2. Cámara (Vista Isométrica)
+                // 2. Cámara (Perspectiva calibrada para calzar con la UI)
                 this.camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
-                this.camera.position.set(0, 1, 6); // Cámara ligeramente más atrás para apreciar los detalles
-                this.camera.lookAt(0, 0, 0);
+                this.adjustCamera(container.clientWidth, container.clientHeight);
 
                 // 3. Renderizador
                 this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -663,9 +663,9 @@
                 dirLight.castShadow = true;
                 this.scene.add(dirLight);
 
-                // 5. Suelo (Carretera)
-                const roadGeo = new THREE.PlaneGeometry(12, 25);
-                const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+                // 5. Suelo (Carretera expandida para cubrir toda la vista de fondo)
+                const roadGeo = new THREE.PlaneGeometry(20, 30);
+                const roadMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 });
                 const road = new THREE.Mesh(roadGeo, roadMat);
                 road.rotation.x = -Math.PI / 2;
                 road.receiveShadow = true;
@@ -674,7 +674,6 @@
                 // 6. EL POLLITO DETALLADO (Low-Poly)
                 this.chicken = new THREE.Group();
                 
-                // Materiales del Pollo
                 const matBody = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.8 });
                 const matBeak = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.6 });
                 const matRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5 });
@@ -693,7 +692,7 @@
                 head.castShadow = true;
                 this.chicken.add(head);
 
-                // Ojos (Blancos con pupilas negras)
+                // Ojos
                 const eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.1), matWhite);
                 eyeR.position.set(0.2, 0.8, 0.3);
                 const pupilR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.05), matBlack);
@@ -742,43 +741,65 @@
                 footL.position.set(-0.15, 0.025, 0.05);
                 this.chicken.add(legR, footR, legL, footL);
 
-                this.chicken.position.set(-4.5, 0, 0);
-                this.chicken.rotation.y = Math.PI / 2; // Gira hacia la derecha
+                // Punto de origen exacto a la izquierda
+                this.chicken.position.set(-4.7, 0, 0);
+                this.chicken.rotation.y = Math.PI / 2; 
                 this.scene.add(this.chicken);
 
                 this.animate();
             },
+            
+            // Función interna para adaptar la cámara a pantallas móviles y de escritorio de forma perfecta
+            adjustCamera(w, h) {
+                if (!this.camera) return;
+                this.camera.aspect = w / h;
+                this.camera.updateProjectionMatrix();
+                
+                // Si la pantalla es muy vertical (móviles), subimos la cámara para no perder perspectiva de los lados
+                if (w < h) {
+                    this.camera.position.set(0, 6.2, 5.2);
+                } else {
+                    this.camera.position.set(0, 5.2, 5.2);
+                }
+                this.camera.lookAt(0, 0.3, 0);
+            },
+
             reset() {
-                this.targetX = -4.5;
+                this.targetX = -4.7;
                 if(this.chicken) {
-                    this.chicken.position.set(-4.5, 0, 0);
+                    this.chicken.position.set(-4.7, 0, 0);
                     this.chicken.scale.set(1, 1, 1);
                 }
                 this.cars.forEach(c => this.scene.remove(c.mesh));
                 this.cars = [];
             },
+
+            // CALIBRACIÓN MATEMÁTICA: Mapea los índices 0-7 a la distribución exacta de la pantalla
             setLane(laneIndex) {
-                this.targetX = -3.5 + (laneIndex * 1);
-                if (laneIndex === -1) this.targetX = -4.5;
+                if (laneIndex === -1) {
+                    this.targetX = -4.7;
+                    return;
+                }
+                // Usamos un mapeo corregido con progresión matemática exacta de 1.15 unidades de espacio 3D por carril
+                this.targetX = -3.98 + (laneIndex * 1.14);
             },
+
             spawnCar(laneIndex, callback) {
-                // 7. EL CARRO DETALLADO
                 const carGroup = new THREE.Group();
                 
-                // Materiales del Vehículo
-                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.5 }); // Rojo Metálico
-                const glassMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.1, metalness: 0.8 }); // Vidrio polarizado
-                const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 }); // Llantas mate
-                const lightFrontMat = new THREE.MeshBasicMaterial({ color: 0xffffee }); // Faros luminosos
-                const lightBackMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Calaveras luminosas
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.5 });
+                const glassMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.1, metalness: 0.8 });
+                const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 });
+                const lightFrontMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
+                const lightBackMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 
-                // Chasis principal (base)
+                // Chasis principal
                 const chasis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 3.0), bodyMat);
                 chasis.position.y = 0.3;
                 chasis.castShadow = true;
                 carGroup.add(chasis);
 
-                // Cabina (Ventanas)
+                // Cabina
                 const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 1.6), glassMat);
                 cabin.position.set(0, 0.7, -0.2);
                 cabin.castShadow = true;
@@ -789,12 +810,12 @@
                 roof.position.set(0, 0.925, -0.2);
                 carGroup.add(roof);
 
-                // Llantas (Usamos Cilindros reales)
+                // Llantas
                 const wheelGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.2, 16);
-                wheelGeo.rotateZ(Math.PI / 2); // Acostar los cilindros
+                wheelGeo.rotateZ(Math.PI / 2);
                 const wheelPositions = [
-                    [-0.8, 0.25, 1.0], [0.8, 0.25, 1.0],   // Delanteras
-                    [-0.8, 0.25, -1.0], [0.8, 0.25, -1.0]  // Traseras
+                    [-0.8, 0.25, 1.0], [0.8, 0.25, 1.0],
+                    [-0.8, 0.25, -1.0], [0.8, 0.25, -1.0]
                 ];
                 wheelPositions.forEach(pos => {
                     const wheel = new THREE.Mesh(wheelGeo, wheelMat);
@@ -803,7 +824,7 @@
                     carGroup.add(wheel);
                 });
 
-                // Faros delanteros
+                // Faros
                 const headlightGeo = new THREE.BoxGeometry(0.3, 0.15, 0.1);
                 const hlR = new THREE.Mesh(headlightGeo, lightFrontMat);
                 hlR.position.set(0.5, 0.35, 1.51);
@@ -819,46 +840,44 @@
                 tlL.position.set(-0.5, 0.35, -1.51);
                 carGroup.add(tlR, tlL);
 
-                // Escalamos el auto para que encaje perfecto en el carril
-                carGroup.scale.set(0.4, 0.4, 0.4);
+                carGroup.scale.set(0.42, 0.42, 0.42);
                 
-                // Lo posiciona lejos en el fondo (Z = -10)
-                carGroup.position.set(-3.5 + (laneIndex * 1), 0, -10);
+                // Asigna la misma X exacta calculada matemáticamente para el carril
+                const laneX = -3.98 + (laneIndex * 1.14);
+                carGroup.position.set(laneX, 0, -12);
                 this.scene.add(carGroup);
                 
-                this.cars.push({ mesh: carGroup, speed: 0.5, cb: callback, hit: false });
+                this.cars.push({ mesh: carGroup, speed: 0.6, cb: callback, hit: false });
             },
+
             animate() {
                 this.animationId = requestAnimationFrame(() => this.animate());
                 
-                // Movimiento suave del pollito con un pequeño salto
                 if(this.chicken) {
                     this.chicken.position.x += (this.targetX - this.chicken.position.x) * 0.15;
-                    // Ajustamos el salto al nivel del suelo '0'
-                    this.chicken.position.y = Math.abs(Math.sin((this.chicken.position.x - this.targetX) * Math.PI)) * 0.6;
+                    // Suavizado e intensificación del arco del salto
+                    this.chicken.position.y = Math.abs(Math.sin((this.chicken.position.x - this.targetX) * Math.PI)) * 0.7;
                 }
 
-                // Movimiento de los autos
                 for (let i = this.cars.length - 1; i >= 0; i--) {
                     let carData = this.cars[i];
                     carData.mesh.position.z += carData.speed;
-                    
-                    // Efecto de rebote ligero en el carro al conducir
-                    carData.mesh.position.y = Math.abs(Math.sin(Date.now() / 50)) * 0.02;
+                    carData.mesh.position.y = Math.abs(Math.sin(Date.now() / 60)) * 0.015;
 
-                    // Detectar colisión
-                    if (carData.mesh.position.z > -0.5 && carData.mesh.position.z < 1.0 && !carData.hit) {
-                        carData.hit = true;
-                        // Efecto de aplastar: todo el Grupo 3D se aplasta
-                        if(this.chicken) {
-                            this.chicken.scale.set(1.5, 0.1, 1.5);
-                            this.chicken.position.y = 0; // Lo pegamos al piso al aplastarse
+                    // Colisión ajustada al nuevo volumen de la escena
+                    if (carData.mesh.position.z > -0.6 && carData.mesh.position.z < 0.8 && !carData.hit) {
+                        // Verificamos proximidad en X para asegurar el golpe en el carril exacto
+                        if (Math.abs(this.chicken.position.x - carData.mesh.position.x) < 0.6) {
+                            carData.hit = true;
+                            if(this.chicken) {
+                                this.chicken.scale.set(1.6, 0.05, 1.6);
+                                this.chicken.position.y = 0;
+                            }
+                            if(carData.cb) carData.cb();
                         }
-                        if(carData.cb) carData.cb();
                     }
                     
-                    // Remover autos que ya pasaron
-                    if (carData.mesh.position.z > 10) {
+                    if (carData.mesh.position.z > 12) {
                         this.scene.remove(carData.mesh);
                         this.cars.splice(i, 1);
                     }
