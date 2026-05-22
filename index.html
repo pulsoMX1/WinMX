@@ -948,16 +948,28 @@
                     this.init(); 
                     State.isProcessing = false; 
                 },
-                updateHero() { 
+                // Añadimos isDead como parámetro para saber si pintar de rojo
+                updateHero(isDead = false) { 
                     Chicken3D.setLane(this.pos);
 
                     // Actualizar estilos del Overlay UI
                     for(let i=0; i<8; i++) {
                         const l = document.getElementById(`lane-ui-${i}`);
                         if(l) {
-                            l.classList.remove('bg-emerald-500/20', 'bg-emerald-500/5', 'shadow-[inset_0_0_10px_rgba(16,185,129,0.5)]');
+                            // Limpiamos las clases de color (verdes y rojas)
+                            l.classList.remove(
+                                'bg-emerald-500/20', 'bg-emerald-500/5', 'shadow-[inset_0_0_10px_rgba(16,185,129,0.5)]',
+                                'bg-red-500/20', 'shadow-[inset_0_0_10px_rgba(239,68,68,0.5)]'
+                            );
+                            
                             if(i === this.pos) {
-                                l.classList.add('bg-emerald-500/20', 'shadow-[inset_0_0_10px_rgba(16,185,129,0.5)]');
+                                if (isDead) {
+                                    // Si perdió, el carril actual se pinta de ROJO
+                                    l.classList.add('bg-red-500/20', 'shadow-[inset_0_0_10px_rgba(239,68,68,0.5)]');
+                                } else {
+                                    // Si sigue vivo, se pinta de VERDE
+                                    l.classList.add('bg-emerald-500/20', 'shadow-[inset_0_0_10px_rgba(16,185,129,0.5)]');
+                                }
                             } else if (i < this.pos) {
                                 l.classList.add('bg-emerald-500/5');
                             }
@@ -975,7 +987,9 @@
                     if (this.pos === 7) risk = 0.98; else risk = Math.min(risk, 0.96); 
                     
                     if(Math.random() < risk) { 
-                        // PIERDE - Animación de Atropello en 3D
+                        // PIERDE - Actualizamos la UI enviando "true" para que salte y se pinte de rojo
+                        this.updateHero(true); 
+
                         Chicken3D.spawnCar(this.pos, () => {
                             this.active = false; 
                             playSfx('lose'); 
@@ -989,7 +1003,7 @@
                     } else { 
                         // GANA el salto
                         playSfx('click'); 
-                        this.updateHero(); 
+                        this.updateHero(false); 
                         const m = this.mults[this.pos]; 
                         document.getElementById('chicken-status').innerText = m.toFixed(2) + 'x'; 
                         if(cBtn) { 
@@ -1027,7 +1041,7 @@
                         document.getElementById('chicken-status').innerText = '1.00x'; 
                         Chicken3D.reset();
                         this.pos = -1;
-                        this.updateHero();
+                        this.updateHero(); // Resetea visualmente
                     }, 1000); 
                     
                     await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win ? winAmt : -this.bet, label: 'CHICKEN 3D', status: 'completed' }); 
