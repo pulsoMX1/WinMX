@@ -678,7 +678,7 @@
 
                 // 3. LÍNEAS DE LA CARRETERA (Separadores Blancos)
                 const lineMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.9 });
-                for (let col = 1; col <= 7; col++) { // 7 separadores entre los 7 carriles vehiculares
+                for (let col = 1; col <= 6; col++) { // 6 separadores entre los 6 carriles vehiculares
                     const separatorX = -3.98 + (col * 1.14) - 0.57; 
                     for (let z = -15; z <= 15; z += 2.5) {
                         const dashGeo = new THREE.BoxGeometry(0.06, 0.02, 1.2);
@@ -783,6 +783,40 @@
                 // laneIndex -1 es la banqueta, 0 es el carril 1.5x...
                 const laneIndex3D = laneIndex + 1; 
                 this.targetX = -3.98 + (laneIndex3D * 1.14);
+            },
+
+            jumpToEnd(callback) {
+                // El pollo salta a la banqueta final (después de los 6 carriles)
+                this.targetX = -3.98 + (7 * 1.14); // 7 posiciones: banqueta inicial + 6 carriles
+                let jumpProgress = 0;
+                const jumpDuration = 0.8; // 0.8 segundos para el salto
+                const startTime = Date.now();
+                
+                const jumpAnimation = () => {
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    jumpProgress = Math.min(elapsed / jumpDuration, 1);
+                    
+                    if(this.chicken) {
+                        // Interpolar la posición X
+                        const currentX = -3.98 + (6.5 * 1.14 * jumpProgress) + (-3.98 + (6.5 * 1.14) * (1 - jumpProgress));
+                        this.chicken.position.x += (this.targetX - this.chicken.position.x) * 0.15;
+                        
+                        // Hacer un arco de salto en Y
+                        const jumpHeight = Math.sin(jumpProgress * Math.PI) * 0.5;
+                        this.chicken.position.y = 0.15 + jumpHeight;
+                    }
+                    
+                    if(jumpProgress < 1) {
+                        requestAnimationFrame(jumpAnimation);
+                    } else {
+                        if(this.chicken) {
+                            this.chicken.position.y = 0.15; // Volver a posición normal
+                        }
+                        if(callback) callback();
+                    }
+                };
+                
+                jumpAnimation();
             },
 
             spawnCar(laneIndex, callback) {
@@ -1041,7 +1075,7 @@
             chicken: {
                 pos: -1, active: false, bet: 0, 
                 // Eliminamos 1.2x. Ahora son 7 multiplicadores.
-                mults: [1.5, 2.2, 4.0, 8.5, 18.0, 45.0, 100.0], 
+                mults: [1.5, 2.2, 4.0, 18.0, 45.0, 100.0], 
                 moving: false,
                 
                 init() { 
@@ -1063,7 +1097,14 @@
                         lane.innerHTML = `<span class="text-[8px] font-black text-white/30 uppercase z-20">${m}x</span>`; 
                         lane.id = `lane-ui-${i}`; 
                         overlay.appendChild(lane); 
-                    }); 
+                    });
+                    
+                    // 3. Carril de Banqueta Final (LLEGADA)
+                    const endLane = document.createElement('div'); 
+                    endLane.className = "flex-1 border-solid border-zinc-500/30 flex flex-col items-center justify-end pb-2 relative transition-all duration-300 bg-white/5"; 
+                    endLane.innerHTML = `<span class="text-[8px] font-black text-white/50 uppercase z-20">LLEGADA</span>`; 
+                    endLane.id = `lane-ui-end`; 
+                    overlay.appendChild(endLane);
                     
                     Chicken3D.init('chicken-world-3d');
                     this.updateHero(); 
@@ -1158,8 +1199,20 @@
                         } 
                         this.moving = false; 
                         
-                        // Si llega al final exitosamente (100x), se cobra en automático
-                        if(this.pos === this.mults.length - 1) this.cashout(); 
+                        // Si llega al final exitosamente (100x), hace salto automático a banqueta final
+                        if(this.pos === this.mults.length - 1) {
+                            this.moving = true;
+                            if(cBtn) cBtn.disabled = true;
+                            playSfx('win');
+                            playSfx('winExtra');
+                            
+                            // El pollo salta a la banqueta final
+                            Chicken3D.jumpToEnd(() => {
+                                setTimeout(() => {
+                                    this.cashout();
+                                }, 1000); // Espera 1 segundo en la banqueta final
+                            });
+                        }
                     } 
                 },
                 async cashout() { 
