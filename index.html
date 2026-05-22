@@ -667,10 +667,9 @@
 
                 // 5. Suelo (Carretera)
                 const roadGeo = new THREE.PlaneGeometry(10, 20);
-                const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+                const roadMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
                 const road = new THREE.Mesh(roadGeo, roadMat);
                 road.rotation.x = -Math.PI / 2;
-                road.receiveShadow = true;
                 this.scene.add(road);
 
                 // 6. El Pollito (Cubo Amarillo)
