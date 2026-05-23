@@ -209,7 +209,7 @@
         </nav>
     </div>
 
-    <div id="modal-deposit" class="fixed inset-0 bg-black/95 z-[100] hidden-view flex items-center justify-center p-6">
+   <div id="modal-deposit" class="fixed inset-0 bg-black/95 z-[100] hidden-view flex items-center justify-center p-6">
         <div class="glass p-8 w-full max-w-sm bg-[#0a0a0a]">
             <div id="dep-step-1">
                 <div class="tx-selector">
@@ -221,9 +221,9 @@
                 
                 <input id="dep-amount" type="number" placeholder="$0" class="w-full bg-transparent text-center text-5xl font-casino outline-none mb-6 text-white">
                 <div class="space-y-3 mb-6">
-                    <input id="clabe-input-field" type="number" placeholder="Cuenta CLABE (18 dígitos)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase hidden-view">
-                    <input id="bank-name" type="text" placeholder="Banco" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase">
-                    <input id="beneficiary-name" type="text" placeholder="Nombre completo" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase">
+                    <input id="clabe-input-field" type="number" placeholder="Tu cuenta Clabe de banco (18 digitos)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase hidden-view">
+                    <input id="bank-name" type="text" placeholder="Nombre del banco remitente" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase">
+                    <input id="beneficiary-name" type="text" placeholder="Nombre completo del remitente" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase">
                 </div>
                 <button onclick="UI.depNextStep()" class="btn-action w-full py-4 font-casino">Continuar</button>
             </div>
@@ -420,8 +420,21 @@
                 document.getElementById('clabe-section').classList.toggle('hidden-view', !isDep);
                 document.getElementById('deposit-instructions-box').classList.toggle('hidden-view', !isDep);
                 document.getElementById('clabe-input-field').classList.toggle('hidden-view', isDep);
+
+                // --- NUEVA LÓGICA DE TEXTOS DINÁMICOS ---
+                const bankInput = document.getElementById('bank-name');
+                const nameInput = document.getElementById('beneficiary-name');
+                
+                if (isDep) {
+                    // Textos cuando está en la pestaña DEPOSITAR
+                    if (bankInput) bankInput.placeholder = "Nombre del banco remitente";
+                    if (nameInput) nameInput.placeholder = "Nombre completo del remitente";
+                } else {
+                    // Textos cuando está en la pestaña RETIRAR
+                    if (bankInput) bankInput.placeholder = "Nombre del Banco destinario";
+                    if (nameInput) nameInput.placeholder = "Nombre completo de Beneficiario";
+                }
             }
-        };
 
         const AuthManager = {
             async login() { if(State.isProcessing) return; const e = document.getElementById('login-email').value, p = document.getElementById('login-password').value; if(!e || !p) return UI.notify("Completa campos", "error"); const btn = document.getElementById('btn-login'); btn.disabled = true; const { data, error } = await sb.auth.signInWithPassword({ email: e, password: p }); if(error) { UI.notify(error.message, "error"); btn.disabled = false; } else location.reload(); },
