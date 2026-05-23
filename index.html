@@ -614,8 +614,8 @@
                             <div class="flex items-center justify-center gap-3">
                                 <i class="fas fa-robot text-white text-3xl" style="animation: bounce 1s infinite;"></i>
                                 <div class="text-center flex-1">
-                                    <h3 class="text-white font-casino text-2xl font-black uppercase tracking-widest">GIROS AUTO</h3>
-                                    <span class="text-white text-[12px] font-bold uppercase">Restantes: <span id="auto-spins-display" class="text-yellow-300 font-black text-lg">10</span></span>
+                                    <h3 class="text-white font-casino text-2xl font-black uppercase tracking-widest">GIROS AUTOMÁTICOS</h3>
+                                    <span class="text-yellow-300 text-3xl font-black" id="auto-spins-display">10</span>
                                 </div>
                             </div>
                         </div>
@@ -774,15 +774,6 @@
                         return UI.notify("Saldo insuficiente", "error"); 
                     } 
                     
-                    // RESTAR GIRO AUTOMÁTICO INMEDIATAMENTE AL INICIAR
-                    if (this.isAutoMode && this.autoSpinsLeft > 0) {
-                        this.autoSpinsLeft--;
-                        this.updateAutoUI();
-                        // Actualizar el display del menú también
-                        const displayEl = document.getElementById('auto-spins-display');
-                        if(displayEl) displayEl.innerText = this.autoSpinsLeft;
-                    }
-                    
                     // Bloquea el campo de apuesta para que no hagan trampa cambiándolo a la mitad de los giros
                     document.getElementById('slots-bet-input').disabled = this.isAutoMode;
 
@@ -836,8 +827,7 @@
                             UI.notify(`¡GANASTE $${win.toFixed(2)}!`, "success"); 
                         } else { 
                             playSfx('lose'); 
-                            // Silenciar el mensaje rojo en modo auto para que no se llene la pantalla
-                            if (!this.isAutoMode) UI.notify("SIN SUERTE", "error"); 
+                            UI.notify("SIN SUERTE", "error"); 
                         } 
                         
                         UI.updateBalance(); 
@@ -850,7 +840,9 @@
 
                         // LÓGICA RECURSIVA PARA AUTO SPIN
                         if (this.isAutoMode) {
-                            // Ya se restó al inicio, solo verificar si hay más giros
+                            this.autoSpinsLeft--;
+                            this.updateAutoUI();
+                            
                             if (this.autoSpinsLeft > 0) {
                                 // Revisa una última vez por seguridad
                                 if (State.balance >= b) {
