@@ -396,8 +396,12 @@
             }
         }, 500);
 
-        // CONFIGURACIÓN SUPABASE DE CONEXIÓN
-        const sb = supabase.createClient("https://fbyhmvofwshofwepshro.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZieWhtdm9md3Nob2Z3ZXBzaHJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU0NjQ4MTYsImV4cCI6MjAzMTA0MDgxNn0.V_Ncoi3A6X9v_u-oG_mQ1Xb_m-B6Y4X_W-m6_m-B6Y4");
+        // =========================================================================
+        // SCRIPT PRINCIPAL UNIFICADO: CONEXIÓN CORREGIDA Y AUDIO PROTEGIDO
+        // =========================================================================
+
+        const DB_CONFIG = { url: "https://dakhnqriwbzihlzhtfcb.supabase.co", key: "sb_publishable_rRcNEvZ9n0IEJzTQcK90nQ_5lfwSDYs" };
+        const sb = window.supabase.createClient(DB_CONFIG.url, DB_CONFIG.key);
 
         const AUDIO_URLS = {
             click: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav',
@@ -408,8 +412,27 @@
             explosion: 'https://assets.mixkit.co/active_storage/sfx/2007/2007-84.wav'
         };
         const audios = {};
-        Object.entries(AUDIO_URLS).forEach(([k,v]) => { audios[k] = new Audio(v); audios[k].volume = 0.3; });
-        function playSfx(name) { try { audios[name].currentTime = 0; audios[name].play(); } catch(e){} }
+        Object.entries(AUDIO_URLS).forEach(([k,v]) => { 
+            try {
+                audios[k] = new Audio(v); 
+                audios[k].volume = 0.3; 
+            } catch(e) {}
+        });
+        
+        // Función de audio asegurada con .catch() para que no rompa el código si el link cae
+        function playSfx(name) { 
+            try { 
+                if(audios[name]) {
+                    audios[name].currentTime = 0; 
+                    let playPromise = audios[name].play(); 
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => { 
+                            // Error silencioso, el juego continúa sin trabarse
+                        });
+                    }
+                }
+            } catch(e){} 
+        }
 
         const SYMBOLS = ['🍒', '🍋', '🍇', '🍉', '🔔', '💎', '7️⃣'];
         const GlobalLuck = {
@@ -1372,7 +1395,7 @@
                         if(!clabeVal || clabeVal.length !== 18) throw new Error("CLABE debe ser de 18 dígitos");
                         historyItem.bank_name = bank;
                         historyItem.account_holder = `${beneficiary} | CLABE: ${clabeVal}`;
-                        if(State.balance < amount) throw new Error("Saldo insuficiente");
+                        if(State.balance < amt) throw new Error("Saldo insuficiente");
                         await this.updateBalanceDB(-amt);
                         State.balance -= amt;
                         UI.updateBalance();
