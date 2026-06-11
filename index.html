@@ -215,7 +215,6 @@
                 </div>
             </div>
 
-            <!-- API Key Banner (shown when key not configured) -->
             <div id="api-key-banner">
                 <p style="font-size:9px;font-weight:900;color:#fbbf24;text-transform:uppercase;margin-bottom:8px;">⚠️ Configura tu API Key</p>
                 <p style="font-size:8px;color:#aaa;margin-bottom:10px;">Para ver partidos reales necesitas una API Key gratuita de <strong style="color:white;">api-football.com</strong> vía RapidAPI.</p>
@@ -231,13 +230,7 @@
                 <div class="wc-tab" id="wc-tab-mis" onclick="WC.setTab('mis')">📋 Mis Apuestas</div>
             </div>
             <div id="wc-partidos">
-                <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px; scrollbar-width:none;" id="wc-group-filters">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:8px;">
-                    <span id="wc-last-refresh" style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;"></span>
-                    <button id="wc-refresh-btn" onclick="WC.loadFixtures(true)" style="display:flex;align-items:center;gap:5px;padding:5px 12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:#10b981;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;">
-                        <i class="fas fa-sync-alt" style="font-size:10px;"></i> Actualizar
-                    </button>
-                </div></div>
+                <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px; scrollbar-width:none;" id="wc-group-filters"></div>
                 <div id="wc-matches-list"></div>
             </div>
             <div id="wc-mis" class="hidden-view">
@@ -272,7 +265,6 @@
         </nav>
     </div>
 
-    <!-- TICKET BOTTOM SHEET -->
     <div id="wc-ticket-overlay" onclick="WC.closeTicketModal()"></div>
     <div id="wc-inline-ticket" style="display:none;"></div>
     <div id="wc-ticket-sheet">
@@ -448,434 +440,581 @@
             if (pendingWin > 0) { let saved = JSON.parse(localStorage.getItem('pendingWins') || '[]'); saved.push({ userId: State.user.id, amount: pendingWin, timestamp: Date.now() }); localStorage.setItem('pendingWins', JSON.stringify(saved)); }
         });
 
-        // ========================================================
-        // MUNDIAL 2026 — MOTOR REAL v2 (API-Football via RapidAPI)
-        // Fixes: timeout, errores 403/429, refresh DOM quirúrgico,
-        //        flash en gol, filtros en vivo, botón refresh manual
-        // ========================================================
+        // ========================================
+        // MUNDIAL 2026 — MOTOR REAL (API-Football)
+        // ========================================
         const WC = {
             slip: {},
             activeTab: 'partidos',
             currentFilter: 'all',
             initialized: false,
-            matches: [],
+            matches: [],         
             lastFetch: 0,
-            lastLiveRefresh: 0,
-            CACHE_TTL: 300000,
-            LIVE_TTL: 30000,
-            RAPIDAPI_KEY: 'TU_API_KEY_AQUI',
-            WC_LEAGUE: 1,
+            CACHE_TTL: 60000,    
+            RAPIDAPI_KEY: 'TU_API_KEY_AQUI',   
+            WC_LEAGUE: 1,        
             WC_SEASON: 2026,
-            _liveTimer: null,
-            _fullTimer: null,
-
-            FLAG_MAP: {
-                'Mexico':'🇲🇽','United States':'🇺🇸','Canada':'🇨🇦',
-                'Brazil':'🇧🇷','Argentina':'🇦🇷','France':'🇫🇷',
-                'Germany':'🇩🇪','Spain':'🇪🇸','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-                'Portugal':'🇵🇹','Netherlands':'🇳🇱','Italy':'🇮🇹',
-                'Belgium':'🇧🇪','Croatia':'🇭🇷','Uruguay':'🇺🇾',
-                'Colombia':'🇨🇴','Japan':'🇯🇵','South Korea':'🇰🇷',
-                'Morocco':'🇲🇦','Senegal':'🇸🇳','Australia':'🇦🇺',
-                'Switzerland':'🇨🇭','Denmark':'🇩🇰','Poland':'🇵🇱',
-                'Serbia':'🇷🇸','Ecuador':'🇪🇨','Ghana':'🇬🇭',
-                'Cameroon':'🇨🇲','Tunisia':'🇹🇳','Iran':'🇮🇷',
-                'Qatar':'🇶🇦','Saudi Arabia':'🇸🇦','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿',
-                'Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Norway':'🇳🇴','Sweden':'🇸🇪',
-                'Austria':'🇦🇹','Turkey':'🇹🇷','Ukraine':'🇺🇦',
-                'Egypt':'🇪🇬','Algeria':'🇩🇿','Nigeria':'🇳🇬',
-                'Ivory Coast':'🇨🇮','South Africa':'🇿🇦',
-                'Paraguay':'🇵🇾','Bolivia':'🇧🇴','Chile':'🇨🇱',
-                'Peru':'🇵🇪','Venezuela':'🇻🇪','Costa Rica':'🇨🇷',
-                'Panama':'🇵🇦','Honduras':'🇭🇳','Jamaica':'🇯🇲',
-                'Haiti':'🇭🇹','Trinidad and Tobago':'🇹🇹',
-                'New Zealand':'🇳🇿','Uzbekistan':'🇺🇿','Jordan':'🇯🇴',
-                'Iraq':'🇮🇶','DR Congo':'🇨🇩','Cape Verde':'🇨🇻',
-                'Curacao':'🇨🇼','Czech Republic':'🇨🇿','El Salvador':'🇸🇻',
-                'Guatemala':'🇬🇹',
-            },
 
             phaseLabel(round) {
                 const r = (round||'').toLowerCase();
-                if (r.includes('group'))        return { label:'Grupos',    cls:'phase-group' };
-                if (r.includes('round of 32'))  return { label:'32avos',    cls:'phase-oct' };
-                if (r.includes('round of 16'))  return { label:'Octavos',   cls:'phase-oct' };
-                if (r.includes('quarter'))      return { label:'Cuartos',   cls:'phase-qtr' };
-                if (r.includes('semi'))         return { label:'Semis',     cls:'phase-semi' };
-                if (r.includes('3rd') || r.includes('third')) return { label:'3er Lugar', cls:'phase-semi' };
-                if (r.includes('final'))        return { label:'Final',     cls:'phase-final' };
-                return { label: round||'Torneo', cls:'phase-group' };
+                if (r.includes('group'))  return { label:'Grupos',   cls:'phase-group' };
+                if (r.includes('round of 32')) return { label:'32avos', cls:'phase-oct' };
+                if (r.includes('round of 16')) return { label:'Octavos', cls:'phase-oct' };
+                if (r.includes('quarter'))     return { label:'Cuartos', cls:'phase-qtr' };
+                if (r.includes('semi'))        return { label:'Semis',   cls:'phase-semi' };
+                if (r.includes('final'))       return { label:'Final',   cls:'phase-final' };
+                return { label: round||'', cls:'phase-group' };
             },
 
-            flag(name) { return (this.FLAG_MAP[name]||'🌍') + ' ' + name; },
-
-            statusCode(st) {
-                if (['1H','HT','2H','ET','P','BT','LIVE'].includes(st)) return 'live';
-                if (['FT','AET','PEN'].includes(st)) return 'finished';
-                return 'upcoming';
-            },
-
-            parseFixture(f) {
-                const fix = f.fixture, teams = f.teams, goals = f.goals;
-                const st = fix.status.short;
-                const status = this.statusCode(st);
-                let result = null;
-                if (status === 'finished') {
-                    const gh = goals.home??0, ga = goals.away??0;
-                    result = gh>ga?'1':gh<ga?'2':'X';
-                }
-                const dt = new Date(fix.date);
-                const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-                return {
-                    id: String(fix.id), fixtureId: fix.id,
-                    phase: f.league.round||'Grupos',
-                    group: (f.league.round||'').replace(/Group Stage\s*-?\s*/i,'').replace(/Group\s+/i,'').trim().charAt(0)||'?',
-                    home: this.flag(teams.home.name), away: this.flag(teams.away.name),
-                    homeRaw: teams.home.name, awayRaw: teams.away.name,
-                    homeOdd:2.00, drawOdd:3.20, awayOdd:3.50,
-                    date:`${months[dt.getMonth()]} ${dt.getDate()}`,
-                    time:`${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`,
-                    venue: fix.venue?.name||'', status, statusShort:st,
-                    scoreHome:goals.home??0, scoreAway:goals.away??0,
-                    minute:fix.status.elapsed||0, result
+            flag(name) {
+                const map = {
+                    'Mexico':'🇲🇽','United States':'🇺🇸','Canada':'🇨🇦',
+                    'Brazil':'🇧🇷','Argentina':'🇦🇷','France':'🇫🇷',
+                    'Germany':'🇩🇪','Spain':'🇪🇸','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+                    'Portugal':'🇵🇹','Netherlands':'🇳🇱','Italy':'🇮🇹',
+                    'Belgium':'🇧🇪','Croatia':'🇭🇷','Uruguay':'🇺🇾',
+                    'Colombia':'🇨🇴','Japan':'🇯🇵','South Korea':'🇰🇷',
+                    'Morocco':'🇲🇦','Senegal':'🇸🇳','Australia':'🇦🇺',
+                    'Switzerland':'🇨🇭','Denmark':'🇩🇰','Poland':'🇵🇱',
+                    'Serbia':'🇷🇸','Ecuador':'🇪🇨','Ghana':'🇬🇭',
+                    'Cameroon':'🇨🇲','Tunisia':'🇹🇳','Iran':'🇮🇷',
+                    'Qatar':'🇶🇦','Saudi Arabia':'🇸🇦','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+                    'Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Norway':'🇳🇴','Sweden':'🇸🇪',
+                    'Austria':'🇦🇹','Turkey':'🇹🇷','Ukraine':'🇺🇦',
+                    'Egypt':'🇪🇬','Algeria':'🇩🇿','Nigeria':'🇳🇬',
+                    'Ivory Coast':"🇨🇮",'South Africa':'🇿🇦',
+                    'Paraguay':'🇵🇾','Bolivia':'🇧🇴','Chile':'🇨🇱',
+                    'Peru':'🇵🇪','Venezuela':'🇻🇪','Costa Rica':'🇨🇷',
+                    'Panama':'🇵🇦','Honduras':'🇭🇳','Jamaica':'🇯🇲',
+                    'Haiti':'🇭🇹','Trinidad and Tobago':'🇹🇹',
+                    'New Zealand':'🇳🇿','Uzbekistan':'🇺🇿','Jordan':'🇯🇴',
+                    'Iraq':'🇮🇶','DR Congo':'🇨🇩','Cape Verde':'🇨🇻',
+                    'Curacao':'🇨🇼','Czech Republic':'🇨🇿',
                 };
+                return (map[name]||'🌍') + ' ' + name;
             },
 
-            async fetchFromAPI(endpoint, params={}) {
-                if (!this.RAPIDAPI_KEY||this.RAPIDAPI_KEY==='TU_API_KEY_AQUI') throw new Error('API Key no configurada');
+            teamKey(home, away) { return `${home}__${away}`; },
+
+            async fetchFromAPI(endpoint, params = {}) {
                 const url = new URL(`https://api-football-v1.p.rapidapi.com/v3/${endpoint}`);
-                Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,String(v)));
-                const ctrl = new AbortController();
-                const tid = setTimeout(()=>ctrl.abort(),12000);
-                try {
-                    const res = await fetch(url.toString(),{signal:ctrl.signal,headers:{'X-RapidAPI-Key':this.RAPIDAPI_KEY,'X-RapidAPI-Host':'api-football-v1.p.rapidapi.com'}});
-                    clearTimeout(tid);
-                    if(res.status===403||res.status===401) throw new Error('API Key inválida o sin acceso ('+res.status+')');
-                    if(res.status===429) throw new Error('Límite de requests alcanzado (429). Espera un momento.');
-                    if(!res.ok) throw new Error('Error HTTP '+res.status);
-                    const json = await res.json();
-                    if(json.errors&&Object.keys(json.errors).length>0) throw new Error(Object.values(json.errors)[0]);
-                    return json;
-                } catch(e){ clearTimeout(tid); if(e.name==='AbortError') throw new Error('Timeout: la API tardó demasiado'); throw e; }
+                Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+                const res = await fetch(url.toString(), {
+                    headers: {
+                        'X-RapidAPI-Key': this.RAPIDAPI_KEY,
+                        'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
+                    }
+                });
+                if (!res.ok) throw new Error(`API error ${res.status}`);
+                return res.json();
             },
 
-            async fetchOddsForFixtures(ids) {
-                const map={};
-                const chunks=[];
-                for(let i=0;i<ids.length;i+=5) chunks.push(ids.slice(i,i+5));
-                for(const chunk of chunks){
-                    await Promise.all(chunk.map(async fid=>{
-                        try{
-                            const d=await this.fetchFromAPI('odds',{fixture:fid,bookmaker:8});
-                            const o=d.response?.[0]; if(!o) return;
-                            const h2h=(o.bookmakers[0]?.bets||[]).find(b=>b.name==='Match Winner');
-                            if(h2h) map[fid]={home:parseFloat(h2h.values.find(v=>v.value==='Home')?.odd||2),draw:parseFloat(h2h.values.find(v=>v.value==='Draw')?.odd||3.2),away:parseFloat(h2h.values.find(v=>v.value==='Away')?.odd||3.5)};
-                        }catch(e){}
-                    }));
+            async loadFixtures(forceRefresh = false) {
+                const now = Date.now();
+                if (!forceRefresh && this.matches.length > 0 && (now - this.lastFetch) < this.CACHE_TTL) return;
+
+                const list = document.getElementById('wc-matches-list');
+                if (list && this.matches.length === 0) {
+                    list.innerHTML = `<div style="text-align:center; padding:40px 0;">
+                        <div style="width:36px;height:36px;border:3px solid rgba(16,185,129,0.3);border-top-color:#10b981;border-radius:50%;margin:0 auto 12px;animation:spin 0.8s linear infinite;"></div>
+                        <p style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;">Cargando partidos en vivo...</p>
+                    </div>`;
                 }
-                return map;
-            },
 
-            showSkeleton(){
-                const l=document.getElementById('wc-matches-list');
-                if(l) l.innerHTML=`<div style="text-align:center;padding:48px 20px;"><div style="width:40px;height:40px;border:3px solid rgba(16,185,129,0.2);border-top-color:#10b981;border-radius:50%;margin:0 auto 16px;animation:spin 0.8s linear infinite;"></div><p style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Cargando partidos del Mundial 2026...</p></div>`;
-            },
+                try {
+                    const data = await this.fetchFromAPI('fixtures', {
+                        league: this.WC_LEAGUE,
+                        season: this.WC_SEASON
+                    });
 
-            updateLastRefreshUI(){
-                const el=document.getElementById('wc-last-refresh');
-                if(!el) return;
-                const n=new Date();
-                el.innerText=`Actualizado ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
-            },
-
-            async loadFixtures(forceRefresh=false){
-                const now=Date.now();
-                if(!forceRefresh&&this.matches.length>0&&(now-this.lastFetch)<this.CACHE_TTL) return;
-                if(this.matches.length===0) this.showSkeleton();
-                const btn=document.getElementById('wc-refresh-btn');
-                if(btn){btn.style.animation='spin 0.8s linear infinite';btn.style.pointerEvents='none';}
-                try{
-                    const data=await this.fetchFromAPI('fixtures',{league:this.WC_LEAGUE,season:this.WC_SEASON});
-                    if(!data.response||data.response.length===0){
-                        const l=document.getElementById('wc-matches-list');
-                        if(l) l.innerHTML=`<div style="text-align:center;padding:48px 20px;"><div style="font-size:3.5rem;margin-bottom:16px;">⚽</div><p style="font-size:12px;font-weight:900;color:#aaa;text-transform:uppercase;margin-bottom:8px;">Fixtures aún no publicados</p><p style="font-size:10px;color:#555;font-weight:600;line-height:1.6;">La API aún no tiene el calendario del Mundial 2026.<br>Verifica que tu plan de RapidAPI tenga acceso.</p><button onclick="WC.loadFixtures(true)" style="margin-top:16px;padding:10px 20px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:10px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer;">🔄 Reintentar</button></div>`;
+                    if (!data.response || data.response.length === 0) {
+                        if (list) list.innerHTML = `<div style="text-align:center;padding:40px 20px;">
+                            <div style="font-size:3rem;margin-bottom:12px;">⚽</div>
+                            <p style="font-size:11px;font-weight:900;color:#888;text-transform:uppercase;">Partidos no disponibles aún</p>
+                            <p style="font-size:9px;color:#555;font-weight:700;margin-top:6px;">Los fixtures del Mundial 2026 se publicarán próximamente en la API.<br>Verifica que tu API Key sea válida.</p>
+                        </div>`;
                         return;
                     }
-                    const parsed=data.response.map(f=>this.parseFixture(f));
-                    const upcoming=parsed.filter(m=>m.status==='upcoming').slice(0,15);
-                    if(upcoming.length>0){
-                        const oddsMap=await this.fetchOddsForFixtures(upcoming.map(m=>m.fixtureId)).catch(()=>({}));
-                        parsed.forEach(m=>{if(oddsMap[m.fixtureId]){m.homeOdd=oddsMap[m.fixtureId].home;m.drawOdd=oddsMap[m.fixtureId].draw;m.awayOdd=oddsMap[m.fixtureId].away;}});
-                    }
-                    this.matches=parsed;
-                    this.lastFetch=now;
+
+                    const upcoming = data.response
+                        .filter(f => f.fixture.status.short === 'NS')
+                        .slice(0, 10)
+                        .map(f => f.fixture.id);
+
+                    let oddsMap = {};
+                    try {
+                        const oddsData = await this.fetchFromAPI('odds', {
+                            league: this.WC_LEAGUE,
+                            season: this.WC_SEASON,
+                            bookmaker: 8   
+                        });
+                        (oddsData.response||[]).forEach(o => {
+                            const fid = o.fixture.id;
+                            const h2h = (o.bookmakers[0]?.bets||[]).find(b => b.name === 'Match Winner');
+                            if (h2h) {
+                                oddsMap[fid] = {
+                                    home: parseFloat(h2h.values.find(v=>v.value==='Home')?.odd||2.00),
+                                    draw: parseFloat(h2h.values.find(v=>v.value==='Draw')?.odd||3.20),
+                                    away: parseFloat(h2h.values.find(v=>v.value==='Away')?.odd||3.50)
+                                };
+                            }
+                        });
+                    } catch(e) { }
+
+                    this.matches = data.response.map(f => {
+                        const fix   = f.fixture;
+                        const teams = f.teams;
+                        const st    = fix.status.short; 
+                        const odd   = oddsMap[fix.id] || { home: 2.00, draw: 3.20, away: 3.50 };
+
+                        let status = 'upcoming';
+                        if (['1H','HT','2H','ET','P','BT','LIVE'].includes(st)) status = 'live';
+                        if (['FT','AET','PEN'].includes(st)) status = 'finished';
+
+                        // Acceso seguro a los goles para prevenir caídas cuando el objeto es nulo
+                        const gh = f.goals?.home ?? 0;
+                        const ga = f.goals?.away ?? 0;
+
+                        let result = null;
+                        if (status === 'finished') {
+                            if (gh > ga) result = '1';
+                            else if (gh < ga) result = '2';
+                            else result = 'X';
+                        }
+
+                        const dt = new Date(fix.date);
+                        const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                        const dateStr = `${months[dt.getMonth()]} ${dt.getDate()}`;
+                        const timeStr = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+
+                        return {
+                            id:        String(fix.id),
+                            fixtureId: fix.id,
+                            phase:     f.league.round || 'Grupos',
+                            group:     (f.league.round||'').replace('Group Stage - ','').replace('Group ','').trim().charAt(0) || '?',
+                            home:      this.flag(teams.home.name),
+                            away:      this.flag(teams.away.name),
+                            homeRaw:   teams.home.name,
+                            awayRaw:   teams.away.name,
+                            homeOdd:   odd.home,
+                            drawOdd:   odd.draw,
+                            awayOdd:   odd.away,
+                            date:      dateStr,
+                            time:      timeStr,
+                            venue:     fix.venue?.name || '',
+                            status,
+                            scoreHome: gh,
+                            scoreAway: ga,
+                            minute:    fix.status.elapsed || 0,
+                            result
+                        };
+                    });
+
+                    this.lastFetch = Date.now();
                     this.renderFilters();
                     this.renderMatches();
                     this.checkBetResults();
-                    this.updateLastRefreshUI();
-                    const hasLive=this.matches.some(m=>m.status==='live');
-                    if(hasLive) this._scheduleLiveRefresh(15000);
-                }catch(err){
-                    console.error('[WC] loadFixtures:',err);
-                    const l=document.getElementById('wc-matches-list');
-                    if(l&&this.matches.length===0){
-                        const isKey=err.message.includes('Key')||err.message.includes('403')||err.message.includes('401');
-                        l.innerHTML=`<div style="text-align:center;padding:40px 20px;"><div style="font-size:2.5rem;margin-bottom:14px;">${isKey?'🔑':'⚠️'}</div><p style="font-size:11px;font-weight:900;color:#ef4444;text-transform:uppercase;margin-bottom:8px;">${isKey?'API Key inválida':'Error de conexión'}</p><p style="font-size:10px;color:#777;font-weight:600;line-height:1.6;max-width:280px;margin:0 auto 16px;">${err.message}</p>${isKey?`<button onclick="document.getElementById('api-key-banner').classList.add('show')" style="margin-bottom:10px;padding:10px 20px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;border-radius:10px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer;display:block;width:100%;">⚙️ Configurar API Key</button>`:''}<button onclick="WC.loadFixtures(true)" style="padding:10px 20px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:10px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer;width:100%;">🔄 Reintentar</button></div>`;
-                    }
-                }finally{
-                    if(btn){btn.style.animation='';btn.style.pointerEvents='';}
+
+                } catch(err) {
+                    console.error('WC API error:', err);
+                    if (list) list.innerHTML = `<div style="text-align:center;padding:40px 20px;">
+                        <div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
+                        <p style="font-size:10px;font-weight:900;color:#ef4444;text-transform:uppercase;">Error al cargar partidos</p>
+                        <p style="font-size:9px;color:#555;font-weight:700;margin-top:6px;">${err.message}</p>
+                        <button onclick="WC.loadFixtures(true)" style="margin-top:14px;padding:8px 18px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;">Reintentar</button>
+                    </div>`;
                 }
             },
 
-            _scheduleLiveRefresh(ms){
-                if(this._liveTimer) clearTimeout(this._liveTimer);
-                this._liveTimer=setTimeout(()=>this.refreshLive(),ms);
-            },
-
-            async refreshLive(){
-                if(!this.RAPIDAPI_KEY||this.RAPIDAPI_KEY==='TU_API_KEY_AQUI') return;
-                const now=Date.now();
-                if(now-this.lastLiveRefresh<this.LIVE_TTL) return;
-                this.lastLiveRefresh=now;
-                try{
-                    const data=await this.fetchFromAPI('fixtures',{league:this.WC_LEAGUE,season:this.WC_SEASON,live:'all'});
-                    const liveMap={};
-                    (data.response||[]).forEach(f=>{liveMap[f.fixture.id]=f;});
-                    let anyLive=false;
-                    this.matches.forEach(m=>{
-                        const f=liveMap[m.fixtureId];
-                        if(f){
-                            const st=f.fixture.status.short;
-                            const ns=this.statusCode(st);
-                            const gh=f.goals.home??0, ga=f.goals.away??0;
-                            const nm=f.fixture.status.elapsed||0;
-                            if(m.status!==ns||m.scoreHome!==gh||m.scoreAway!==ga||m.minute!==nm){
-                                const scoreChanged=m.scoreHome!==gh||m.scoreAway!==ga;
-                                m.status=ns; m.statusShort=st; m.scoreHome=gh; m.scoreAway=ga; m.minute=nm;
-                                if(ns==='finished'&&m.result===null){m.result=gh>ga?'1':gh<ga?'2':'X';this.checkBetResults();}
-                                if(this.activeTab==='partidos') this._updateMatchCardDOM(m,scoreChanged);
-                            }
-                            if(ns==='live') anyLive=true;
-                        } else if(m.status==='live'){
-                            this._checkFinishedMatch(m);
+            // Motor de actualización en vivo solucionado
+            async refreshLive() {
+                if (this.matches.length === 0) return;
+                
+                try {
+                    // Ahora consultamos los partidos en vivo de la API directamente sin bloquearnos
+                    const data = await this.fetchFromAPI('fixtures', {
+                        live: 'all'
+                    });
+                    
+                    const liveMap = {};
+                    (data.response||[]).forEach(f => { 
+                        if (f.league.id === this.WC_LEAGUE) {
+                            liveMap[String(f.fixture.id)] = f; 
                         }
                     });
-                    this.updateLastRefreshUI();
-                    this._scheduleLiveRefresh(anyLive?30000:60000);
-                }catch(e){ console.error('[WC] refreshLive:',e); this._scheduleLiveRefresh(60000); }
-            },
 
-            async _checkFinishedMatch(m){
-                try{
-                    const d=await this.fetchFromAPI('fixtures',{id:m.fixtureId});
-                    const f=d.response?.[0]; if(!f) return;
-                    const st=f.fixture.status.short, ns=this.statusCode(st);
-                    const gh=f.goals.home??0, ga=f.goals.away??0;
-                    if(m.status!==ns||m.scoreHome!==gh||m.scoreAway!==ga){
-                        m.status=ns; m.scoreHome=gh; m.scoreAway=ga; m.minute=f.fixture.status.elapsed||0;
-                        if(ns==='finished'&&m.result===null){m.result=gh>ga?'1':gh<ga?'2':'X';this.checkBetResults();}
-                        if(this.activeTab==='partidos') this._updateMatchCardDOM(m,true);
+                    let changed = false;
+                    let needFullRefresh = false;
+
+                    this.matches.forEach(m => {
+                        const f = liveMap[m.fixtureId];
+                        if (f) {
+                            // Si el partido está entre los enviados por la API, actualizamos marcadores y tiempos
+                            const st = f.fixture.status.short;
+                            const newStatus = ['1H','HT','2H','ET','P','BT','LIVE'].includes(st) ? 'live' : ['FT','AET','PEN'].includes(st) ? 'finished' : 'upcoming';
+                            const gh = f.goals?.home ?? 0; 
+                            const ga = f.goals?.away ?? 0;
+                            const minute = f.fixture.status.elapsed || 0;
+
+                            if (m.status !== newStatus || m.scoreHome !== gh || m.scoreAway !== ga || m.minute !== minute) {
+                                m.status    = newStatus;
+                                m.scoreHome = gh;
+                                m.scoreAway = ga;
+                                m.minute    = minute;
+                                if (newStatus === 'finished' && m.result === null) {
+                                    m.result = gh > ga ? '1' : gh < ga ? '2' : 'X';
+                                    this.checkBetResults();
+                                }
+                                changed = true;
+                            }
+                        } else if (m.status === 'live') {
+                            // Si localmente lo teníamos como "live" pero la API ya no lo reporta, seguro ya finalizó.
+                            needFullRefresh = true;
+                        }
+                    });
+
+                    if (changed && this.activeTab === 'partidos') this.renderMatches();
+
+                    if (needFullRefresh) {
+                        this.loadFixtures(true); // Fuerza un refresco completo para obtener los resultados finales
                     }
-                }catch(e){}
+                } catch(e) { console.error('Live refresh error:', e); }
             },
 
-            _updateMatchCardDOM(m,flash=false){
-                const card=document.getElementById(`mc-${m.id}`);
-                if(!card) return;
-                const d=document.createElement('div');
-                d.innerHTML=this.matchCard(m);
-                const nc=d.firstElementChild;
-                if(nc){
-                    card.replaceWith(nc);
-                    if(flash){nc.style.transition='box-shadow 0.3s ease';nc.style.boxShadow='0 0 20px rgba(16,185,129,0.6),0 0 40px rgba(16,185,129,0.3)';setTimeout(()=>{if(nc.parentNode)nc.style.boxShadow='';},1500);}
-                }
-            },
-
-            init(){
-                if(!this.initialized){
-                    this.initialized=true;
+            init() {
+                if (!this.initialized) {
+                    this.initialized = true;
                     this.loadLocalBets();
-                    if(this._fullTimer) clearInterval(this._fullTimer);
-                    this._fullTimer=setInterval(()=>this.loadFixtures(true),600000);
-                    this._scheduleLiveRefresh(30000);
+                    setInterval(() => { this.refreshLive(); }, 60000);
+                    setInterval(() => { this.loadFixtures(true); }, 600000);
                 }
                 this.setTab('partidos');
                 this.loadFixtures();
             },
 
-            setTab(tab){
-                this.activeTab=tab;
-                ['partidos','mis'].forEach(t=>{
-                    const el=document.getElementById(`wc-${t}`);
-                    const btn=document.getElementById(`wc-tab-${t}`);
-                    if(el) el.classList.toggle('hidden-view',t!==tab);
-                    if(btn) btn.classList.toggle('active',t===tab);
+            setTab(tab) {
+                this.activeTab = tab;
+                ['partidos','mis'].forEach(t => {
+                    document.getElementById(`wc-${t}`).classList.toggle('hidden-view', t !== tab);
+                    document.getElementById(`wc-tab-${t}`).classList.toggle('active', t === tab);
                 });
-                if(tab==='mis') this.renderMyBets();
-                if(tab==='partidos'){this.renderMatches();this.renderInlineTicket();}
+                if (tab === 'mis') this.renderMyBets();
+                if (tab === 'partidos') { this.renderMatches(); this.renderInlineTicket(); }
             },
 
-            renderFilters(){
-                const c=document.getElementById('wc-group-filters');
-                if(!c) return;
-                const liveCount=this.matches.filter(m=>m.status==='live').length;
-                const statusF=[
-                    {val:'all',label:'Todos'},
-                    ...(liveCount>0?[{val:'__live__',label:`🔴 En Vivo (${liveCount})`}]:[]),
-                    {val:'__upcoming__',label:'Próximos'},
-                    {val:'__finished__',label:'Finalizados'},
-                ];
-                const groups=[...new Set(this.matches.filter(m=>m.group&&m.group!=='?'&&m.group.length===1).map(m=>m.group))].sort();
-                const all=[...statusF,...groups.map(g=>({val:g,label:`Grupo ${g}`}))];
-                c.innerHTML=all.map(({val,label})=>{
-                    const active=this.currentFilter===val;
-                    const isLv=val==='__live__';
-                    return `<button onclick="WC.filterBy('${val}')" style="white-space:nowrap;padding:6px 14px;border-radius:99px;font-size:9px;font-weight:900;text-transform:uppercase;border:1px solid ${active?'var(--mx-green)':isLv?'rgba(239,68,68,0.4)':'rgba(255,255,255,0.1)'};background:${active?'var(--mx-green)':isLv?'rgba(239,68,68,0.08)':'rgba(255,255,255,0.03)'};color:${active?'black':isLv?'#f87171':'#888'};cursor:pointer;transition:all 0.2s;">${label}</button>`;
+            renderFilters() {
+                const container = document.getElementById('wc-group-filters');
+                const groups = ['Todos', ...new Set(
+                    this.matches.map(m => m.group).filter(g => g && g !== '?').sort()
+                )];
+                container.innerHTML = groups.map(g => {
+                    const val = g === 'Todos' ? 'all' : g;
+                    const active = this.currentFilter === val;
+                    return `<button onclick="WC.filterBy('${val}')" style="white-space:nowrap;padding:6px 14px;border-radius:99px;font-size:9px;font-weight:900;text-transform:uppercase;border:1px solid ${active?'var(--mx-green)':'rgba(255,255,255,0.1)'};background:${active?'var(--mx-green)':'rgba(255,255,255,0.03)'};color:${active?'black':'#888'};cursor:pointer;">${g === 'Todos' ? 'Todos' : 'Grupo '+g}</button>`;
                 }).join('');
             },
 
-            filterBy(val){this.currentFilter=val;this.renderFilters();this.renderMatches();},
+            filterBy(val) {
+                this.currentFilter = val;
+                this.renderFilters();
+                this.renderMatches();
+            },
 
-            renderMatches(){
-                const list=document.getElementById('wc-matches-list');
-                if(!list) return;
-                let filtered;
-                if(this.currentFilter==='__live__') filtered=this.matches.filter(m=>m.status==='live');
-                else if(this.currentFilter==='__upcoming__') filtered=this.matches.filter(m=>m.status==='upcoming');
-                else if(this.currentFilter==='__finished__') filtered=this.matches.filter(m=>m.status==='finished');
-                else if(this.currentFilter==='all') filtered=this.matches;
-                else filtered=this.matches.filter(m=>m.group===this.currentFilter);
-                if(filtered.length===0&&this.matches.length>0){list.innerHTML=`<p style="text-align:center;color:#555;font-size:10px;font-weight:700;text-transform:uppercase;padding:48px 0;">Sin partidos en este filtro</p>`;return;}
-                if(filtered.length===0) return;
-                const order={live:0,upcoming:1,finished:2};
-                filtered=[...filtered].sort((a,b)=>{if(order[a.status]!==order[b.status]) return order[a.status]-order[b.status];return a.id.localeCompare(b.id);});
-                const byGroup={};
-                filtered.forEach(m=>{const k=m.phase||'Torneo';if(!byGroup[k]) byGroup[k]=[];byGroup[k].push(m);});
-                list.innerHTML=Object.entries(byGroup).map(([round,matches])=>{
-                    const {label,cls}=this.phaseLabel(round);
-                    const gl=matches[0].group;
-                    const gs=gl&&gl!=='?'&&gl.length===1?` – Grupo ${gl}`:'';
-                    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px;"><span class="phase-badge ${cls}">${label}${gs}</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.05);"></div></div>${matches.map(m=>this.matchCard(m)).join('')}`;
+            renderMatches() {
+                const list = document.getElementById('wc-matches-list');
+                if (!list) return;
+                const filtered = this.currentFilter === 'all'
+                    ? this.matches
+                    : this.matches.filter(m => m.group === this.currentFilter);
+
+                if (filtered.length === 0 && this.matches.length > 0) {
+                    list.innerHTML = `<p style="text-align:center;color:#555;font-size:10px;font-weight:700;text-transform:uppercase;padding:40px 0;">Sin partidos en este grupo</p>`;
+                    return;
+                }
+                if (filtered.length === 0) return; 
+
+                const byGroup = {};
+                filtered.forEach(m => {
+                    const key = m.phase || 'Sin grupo';
+                    if (!byGroup[key]) byGroup[key] = [];
+                    byGroup[key].push(m);
+                });
+
+                list.innerHTML = Object.entries(byGroup).map(([round, matches]) => {
+                    const { label, cls } = this.phaseLabel(round);
+                    return `
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                        <span class="phase-badge ${cls}">${label} ${matches[0].group !== '?' ? '– Grupo '+matches[0].group : ''}</span>
+                        <div style="flex:1;height:1px;background:rgba(255,255,255,0.05);"></div>
+                    </div>
+                    ${matches.map(m => this.matchCard(m)).join('')}`;
                 }).join('');
             },
 
-            matchCard(m){
-                const slip=this.slip[m.id], hasBet=!!slip;
-                const h1Sel=hasBet&&slip.pick==='1'?'selected':'';
-                const xSel=hasBet&&slip.pick==='X'?'selected':'';
-                const h2Sel=hasBet&&slip.pick==='2'?'selected':'';
-                const isLive=m.status==='live', isDone=m.status==='finished';
-                const cardCls=isDone?(m.result===(slip&&slip.pick)?'settled-win':(slip?'settled-loss':'')):(hasBet?'has-bet':'');
-                const statusBadge=isLive?`<span style="font-size:8px;font-weight:900;color:#ef4444;display:flex;align-items:center;gap:4px;"><span class="live-pulse" style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block;"></span>EN VIVO ${m.minute?m.minute+"'":''}  </span>`:isDone?`<span style="font-size:9px;font-weight:900;color:#555;background:rgba(255,255,255,0.05);padding:2px 7px;border-radius:4px;">FINAL</span>`:'';
-                const center=(isLive||isDone)?`<div style="padding:5px 14px;background:${isLive?'rgba(239,68,68,0.12)':'rgba(255,255,255,0.06)'};border-radius:8px;border:1px solid ${isLive?'rgba(239,68,68,0.3)':'rgba(255,255,255,0.1)'};min-width:52px;text-align:center;flex-shrink:0;"><span style="font-family:'Archivo Black',sans-serif;font-size:18px;color:white;letter-spacing:3px;">${m.scoreHome} - ${m.scoreAway}</span></div>`:`<div style="padding:5px 12px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.06);flex-shrink:0;"><span style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#444;">VS</span></div>`;
-                const btns=isDone?`<div style="text-align:center;padding:8px;background:rgba(255,255,255,0.03);border-radius:0.8rem;font-size:10px;font-weight:900;color:${m.result===(slip&&slip.pick)?'#10b981':'#ef4444'};">${m.result===(slip&&slip.pick)?'✅ Acertaste esta predicción':(slip?'❌ No acertaste':'Partido finalizado')}</div>`:`<div style="display:flex;gap:8px;${isLive?'opacity:0.35;pointer-events:none;':''}"><div class="odd-btn ${h1Sel}" onclick="WC.togglePick('${m.id}','1','${m.home.replace(/['"]/g,'')}',${m.homeOdd})"><span class="odd-label">1 Local</span><span class="odd-value">${m.homeOdd.toFixed(2)}</span></div><div class="odd-btn ${xSel}" onclick="WC.togglePick('${m.id}','X','Empate',${m.drawOdd})"><span class="odd-label">X Empate</span><span class="odd-value">${m.drawOdd.toFixed(2)}</span></div><div class="odd-btn ${h2Sel}" onclick="WC.togglePick('${m.id}','2','${m.away.replace(/['"]/g,'')}',${m.awayOdd})"><span class="odd-label">2 Visitante</span><span class="odd-value">${m.awayOdd.toFixed(2)}</span></div></div>`;
-                return `<div class="match-card ${cardCls}" id="mc-${m.id}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">${m.date} · ${m.time}${m.venue?' · '+m.venue:''}</span>${statusBadge}</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:${isLive||isDone?'8':'12'}px;"><div style="flex:1;text-align:right;"><span style="font-size:11px;font-weight:900;color:white;display:block;line-height:1.4;">${m.home}</span></div>${center}<div style="flex:1;text-align:left;"><span style="font-size:11px;font-weight:900;color:white;display:block;line-height:1.4;">${m.away}</span></div></div>${btns}</div>`;
+            matchCard(m) {
+                const slip = this.slip[m.id];
+                const hasBet = !!slip;
+                const h1Sel  = hasBet && slip.pick === '1' ? 'selected' : '';
+                const xSel   = hasBet && slip.pick === 'X' ? 'selected' : '';
+                const h2Sel  = hasBet && slip.pick === '2' ? 'selected' : '';
+                const isLive  = m.status === 'live';
+                const isDone  = m.status === 'finished';
+                let cardCls = isDone
+                    ? (m.result === (slip&&slip.pick) ? 'settled-win' : (slip ? 'settled-loss' : ''))
+                    : (hasBet ? 'has-bet' : '');
+                return `
+                <div class="match-card ${cardCls}" id="mc-${m.id}">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">${m.date} · ${m.time}${m.venue ? ' · '+m.venue : ''}</span>
+                        ${isLive ? `<span style="font-size:8px;font-weight:900;color:#ef4444;display:flex;align-items:center;gap:4px;"><span class="live-pulse" style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block;"></span>EN VIVO ${m.minute}'</span>` : ''}
+                        ${isDone ? `<span style="font-size:9px;font-weight:900;color:#888;">FIN</span>` : ''}
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:${isLive||isDone?'8':'12'}px;">
+                        <div style="flex:1;text-align:right;"><span style="font-size:11px;font-weight:900;color:white;display:block;line-height:1.3;">${m.home}</span></div>
+                        ${isLive||isDone
+                          ? `<div style="padding:4px 12px;background:${isLive?'rgba(239,68,68,0.12)':'rgba(255,255,255,0.06)'};border-radius:8px;border:1px solid ${isLive?'rgba(239,68,68,0.3)':'rgba(255,255,255,0.1)'};min-width:48px;text-align:center;"><span style="font-family:'Archivo Black',sans-serif;font-size:16px;color:white;letter-spacing:2px;">${m.scoreHome} - ${m.scoreAway}</span></div>`
+                          : `<div style="padding:4px 10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.06);"><span style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#444;">VS</span></div>`}
+                        <div style="flex:1;text-align:left;"><span style="font-size:11px;font-weight:900;color:white;display:block;line-height:1.3;">${m.away}</span></div>
+                    </div>
+                    ${isDone ? `
+                    <div style="text-align:center;padding:8px;background:rgba(255,255,255,0.03);border-radius:0.8rem;font-size:10px;font-weight:900;color:${m.result===(slip&&slip.pick)?'#10b981':'#ef4444'};">
+                        ${m.result===(slip&&slip.pick)?'✅ Acertaste esta predicción':(slip?'❌ No acertaste':'Partido finalizado')}
+                    </div>` : `
+                    <div style="display:flex;gap:8px;${isLive?'opacity:0.4;pointer-events:none;':''}">
+                        <div class="odd-btn ${h1Sel}" onclick="WC.togglePick('${m.id}','1','${m.home.replace(/'/g,"\\'")}',${m.homeOdd})">
+                            <span class="odd-label">1 Local</span><span class="odd-value">${m.homeOdd.toFixed(2)}</span>
+                        </div>
+                        <div class="odd-btn ${xSel}" onclick="WC.togglePick('${m.id}','X','Empate',${m.drawOdd})">
+                            <span class="odd-label">X Empate</span><span class="odd-value">${m.drawOdd.toFixed(2)}</span>
+                        </div>
+                        <div class="odd-btn ${h2Sel}" onclick="WC.togglePick('${m.id}','2','${m.away.replace(/'/g,"\\'")}',${m.awayOdd})">
+                            <span class="odd-label">2 Visitante</span><span class="odd-value">${m.awayOdd.toFixed(2)}</span>
+                        </div>
+                    </div>`}
+                </div>`;
             },
 
-            togglePick(matchId,pick,label,odd){
+            togglePick(matchId, pick, label, odd) {
                 playSfx('click');
-                const m=this.matches.find(x=>x.id===matchId);
-                if(!m||m.status==='finished') return;
-                if(this.slip[matchId]&&this.slip[matchId].pick===pick) delete this.slip[matchId];
-                else this.slip[matchId]={pick,label,odd,matchHome:m.home,matchAway:m.away,date:m.date,time:m.time};
+                const m = this.matches.find(x => x.id === matchId);
+                if (!m || m.status === 'finished') return;
+                if (this.slip[matchId] && this.slip[matchId].pick === pick) {
+                    delete this.slip[matchId];
+                } else {
+                    this.slip[matchId] = { pick, label, odd, matchHome: m.home, matchAway: m.away, date: m.date, time: m.time };
+                }
                 this.updateTicketCount();
-                this._updateMatchCardDOM(m,false);
+                const card = document.getElementById(`mc-${matchId}`);
+                if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
                 this.renderInlineTicket();
             },
 
-            updateTicketCount(){const c=Object.keys(this.slip).length;const el=document.getElementById('wc-ticket-count');if(el) el.innerText=c+(c===1?' selección':' selecciones');},
-            getTotalOdd(){return Object.values(this.slip).reduce((a,s)=>a*s.odd,1);},
-            updatePotential(){
-                const amt=parseFloat(document.getElementById('wc-bet-amount')?.value)||0;
-                const to=this.getTotalOdd();
-                const e1=document.getElementById('wc-total-odd'), e2=document.getElementById('wc-potential-win');
-                if(e1) e1.innerText=to.toFixed(2)+'x';
-                if(e2) e2.innerText=`$${(amt*to).toFixed(2)}`;
+            updateTicketCount() {
+                const count = Object.keys(this.slip).length;
+                const el = document.getElementById('wc-ticket-count');
+                if (el) el.innerText = count + (count===1?' selección':' selecciones');
             },
 
-            renderInlineTicket(){
-                const items=Object.entries(this.slip);
-                const se=document.getElementById('wc-slip-items');
-                if(se) se.innerHTML=items.map(([mid,s])=>`<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.3);border-radius:0.7rem;padding:8px 10px;margin-bottom:6px;"><div><span style="font-size:8px;color:#555;font-weight:700;display:block;">${s.matchHome} vs ${s.matchAway}</span><span style="font-size:10px;font-weight:900;color:white;">${s.label}</span></div><div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'Archivo Black',sans-serif;color:#10b981;font-size:14px;">${s.odd.toFixed(2)}</span><button onclick="WC.removePick('${mid}')" style="color:#555;font-size:16px;background:none;border:none;cursor:pointer;line-height:1;">✕</button></div></div>`).join('');
+            getTotalOdd() {
+                return Object.values(this.slip).reduce((acc, s) => acc * s.odd, 1);
+            },
+
+            updatePotential() {
+                const amt = parseFloat(document.getElementById('wc-bet-amount')?.value) || 0;
+                const totalOdd = this.getTotalOdd();
+                const el1 = document.getElementById('wc-total-odd');
+                const el2 = document.getElementById('wc-potential-win');
+                if (el1) el1.innerText = totalOdd.toFixed(2) + 'x';
+                if (el2) el2.innerText = `$${(amt * totalOdd).toFixed(2)}`;
+            },
+
+            renderInlineTicket() {
+                const items = Object.entries(this.slip);
+                const slipItemsEl = document.getElementById('wc-slip-items');
+                if (slipItemsEl) {
+                    slipItemsEl.innerHTML = items.map(([matchId, s]) => {
+                        // Incluimos el marcador en el ticket de apuestas si el partido está en vivo
+                        const mObj = WC.matches.find(x => x.id === matchId);
+                        const scoreTag = (mObj && (mObj.status === 'live' || mObj.status === 'finished'))
+                            ? `<span style="color:${mObj.status==='live'?'#ef4444':'#10b981'};font-weight:900;margin:0 4px;">${mObj.scoreHome}-${mObj.scoreAway}</span>`
+                            : `<span style="margin:0 4px;">vs</span>`;
+                        
+                        return `
+                        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.3);border-radius:0.7rem;padding:8px 10px;margin-bottom:6px;">
+                            <div>
+                                <span style="font-size:8px;color:#555;font-weight:700;display:flex;align-items:center;">${s.matchHome} ${scoreTag} ${s.matchAway}</span>
+                                <span style="font-size:10px;font-weight:900;color:white;">${s.label}</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-family:'Archivo Black',sans-serif;color:#10b981;font-size:14px;">${s.odd.toFixed(2)}</span>
+                                <button onclick="WC.removePick('${matchId}')" style="color:#555;font-size:16px;background:none;border:none;cursor:pointer;line-height:1;">✕</button>
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
                 this.updateTicketCount();
                 this.updatePotential();
-                if(items.length>0){document.getElementById('wc-ticket-sheet').classList.add('sheet-open');document.getElementById('wc-ticket-overlay').classList.add('sheet-open');}
+                if (items.length > 0) {
+                    document.getElementById('wc-ticket-sheet').classList.add('sheet-open');
+                    document.getElementById('wc-ticket-overlay').classList.add('sheet-open');
+                }
             },
 
-            closeTicketModal(){document.getElementById('wc-ticket-sheet').classList.remove('sheet-open');document.getElementById('wc-ticket-overlay').classList.remove('sheet-open');},
-            renderSlip(){this.renderInlineTicket();},
+            closeTicketModal() {
+                document.getElementById('wc-ticket-sheet').classList.remove('sheet-open');
+                document.getElementById('wc-ticket-overlay').classList.remove('sheet-open');
+            },
 
-            removePick(matchId){
+            renderSlip() { this.renderInlineTicket(); },
+
+            removePick(matchId) {
                 delete this.slip[matchId];
-                const m=this.matches.find(x=>x.id===matchId);
-                if(m) this._updateMatchCardDOM(m,false);
-                if(Object.keys(this.slip).length===0){this.closeTicketModal();this.updateTicketCount();}
+                const m = this.matches.find(x => x.id === matchId);
+                if (m) {
+                    const card = document.getElementById(`mc-${matchId}`);
+                    if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
+                }
+                if (Object.keys(this.slip).length === 0) { this.closeTicketModal(); this.updateTicketCount(); }
                 else this.renderInlineTicket();
             },
 
-            clearSlip(){
-                const prev={...this.slip}; this.slip={};
-                this.closeTicketModal(); this.updateTicketCount();
-                Object.keys(prev).forEach(mid=>{const m=this.matches.find(x=>x.id===mid);if(m) this._updateMatchCardDOM(m,false);});
+            clearSlip() {
+                const prev = {...this.slip};
+                this.slip = {};
+                this.closeTicketModal();
+                this.updateTicketCount();
+                Object.keys(prev).forEach(matchId => {
+                    const m = this.matches.find(x => x.id === matchId);
+                    if (m) {
+                        const card = document.getElementById(`mc-${matchId}`);
+                        if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
+                    }
+                });
             },
 
-            async placeBet(){
-                if(State.isProcessing) return;
-                const amt=parseFloat(document.getElementById('wc-bet-amount').value);
-                if(!amt||amt<10) return UI.notify("Apuesta mínima $10 MXN","error");
-                if(Object.keys(this.slip).length===0) return UI.notify("Agrega al menos un partido","error");
-                if(State.balance<amt) return UI.notify("Saldo insuficiente","error");
-                State.isProcessing=true;
-                try{
-                    const to=this.getTotalOdd(), pw=amt*to;
-                    const picks=Object.entries(this.slip).map(([id,s])=>({matchId:id,pick:s.pick,label:s.label,odd:s.odd,matchHome:s.matchHome,matchAway:s.matchAway}));
-                    await Core.updateBalanceDB(-amt); State.balance-=amt; UI.updateBalance();
-                    const b={id:`wc_${Date.now()}`,userId:State.user.id,amount:amt,totalOdd:to,potentialWin:pw,picks,status:'pending',created:new Date().toISOString()};
-                    let bets=JSON.parse(localStorage.getItem('wcBets')||'[]');bets.push(b);localStorage.setItem('wcBets',JSON.stringify(bets));
-                    await Core.recordHistory({user_id:State.user.id,type:'bets',amount:-amt,label:`⚽ MUNDIAL (${picks.length} PARTIDO${picks.length>1?'S':''}) @ ${to.toFixed(2)}x`,status:'pending'});
+            async placeBet() {
+                if (State.isProcessing) return;
+                const amt = parseFloat(document.getElementById('wc-bet-amount').value);
+                if (!amt || amt < 10) return UI.notify("Apuesta mínima $10 MXN", "error");
+                if (Object.keys(this.slip).length === 0) return UI.notify("Agrega al menos un partido", "error");
+                if (State.balance < amt) return UI.notify("Saldo insuficiente", "error");
+                State.isProcessing = true;
+                try {
+                    const totalOdd = this.getTotalOdd();
+                    const potentialWin = amt * totalOdd;
+                    const picks = Object.entries(this.slip).map(([id, s]) => ({
+                        matchId: id, pick: s.pick, label: s.label, odd: s.odd,
+                        matchHome: s.matchHome, matchAway: s.matchAway
+                    }));
+                    await Core.updateBalanceDB(-amt);
+                    State.balance -= amt;
+                    UI.updateBalance();
+                    const betObj = {
+                        id: `wc_${Date.now()}`, userId: State.user.id,
+                        amount: amt, totalOdd, potentialWin, picks,
+                        status: 'pending', created: new Date().toISOString()
+                    };
+                    let bets = JSON.parse(localStorage.getItem('wcBets') || '[]');
+                    bets.push(betObj);
+                    localStorage.setItem('wcBets', JSON.stringify(bets));
+                    await Core.recordHistory({
+                        user_id: State.user.id, type: 'bets', amount: -amt,
+                        label: `⚽ MUNDIAL (${picks.length} PARTIDO${picks.length>1?'S':''}) @ ${totalOdd.toFixed(2)}x`,
+                        status: 'pending'
+                    });
                     playSfx('win');
-                    UI.notify(`✅ ¡Ticket apostado! Posible ganancia: $${pw.toFixed(2)}`,"success");
-                    document.getElementById('wc-bet-amount').value='';
-                    this.clearSlip(); this.setTab('mis');
-                }catch(e){UI.notify("Error al procesar apuesta","error");}
-                finally{State.isProcessing=false;}
+                    UI.notify(`✅ ¡Ticket apostado! Posible ganancia: $${potentialWin.toFixed(2)}`, "success");
+                    document.getElementById('wc-bet-amount').value = '';
+                    this.clearSlip();
+                    this.setTab('mis');
+                } catch(e) {
+                    UI.notify("Error al procesar apuesta", "error");
+                } finally { State.isProcessing = false; }
             },
 
-            loadLocalBets(){return JSON.parse(localStorage.getItem('wcBets')||'[]');},
+            loadLocalBets() {
+                return JSON.parse(localStorage.getItem('wcBets') || '[]');
+            },
 
-            checkBetResults(){
-                if(!State.user) return;
-                let bets=JSON.parse(localStorage.getItem('wcBets')||'[]');
-                let changed=false;
-                bets=bets.map(b=>{
-                    if(b.userId!==State.user.id||b.status!=='pending') return b;
-                    const allS=b.picks.every(p=>{const m=this.matches.find(x=>x.id===p.matchId);return m&&m.result!==null;});
-                    if(!allS) return b;
-                    const allC=b.picks.every(p=>{const m=this.matches.find(x=>x.id===p.matchId);return m&&m.result===p.pick;});
-                    b.status=allC?'won':'lost'; changed=true;
-                    if(allC){Core.updateBalanceDB(b.potentialWin);State.balance+=b.potentialWin;UI.updateBalance();setTimeout(()=>{playSfx('win');UI.notify(`🏆 ¡GANASTE $${b.potentialWin.toFixed(2)} del Mundial!`,"success");},800);}
-                    else{setTimeout(()=>{UI.notify(`❌ Tu ticket del Mundial no acertó`,"error");},800);}
+            checkBetResults() {
+                if (!State.user) return;
+                let bets = JSON.parse(localStorage.getItem('wcBets') || '[]');
+                let changed = false;
+                bets = bets.map(b => {
+                    if (b.userId !== State.user.id || b.status !== 'pending') return b;
+                    const allSettled = b.picks.every(p => {
+                        const match = this.matches.find(m => m.id === p.matchId);
+                        return match && match.result !== null;
+                    });
+                    if (!allSettled) return b;
+                    const allCorrect = b.picks.every(p => {
+                        const match = this.matches.find(m => m.id === p.matchId);
+                        return match && match.result === p.pick;
+                    });
+                    b.status = allCorrect ? 'won' : 'lost';
+                    changed = true;
+                    if (allCorrect) {
+                        Core.updateBalanceDB(b.potentialWin);
+                        State.balance += b.potentialWin;
+                        UI.updateBalance();
+                        setTimeout(() => { playSfx('win'); UI.notify(`🏆 ¡GANASTE $${b.potentialWin.toFixed(2)} del Mundial!`, "success"); }, 800);
+                    } else {
+                        setTimeout(() => { UI.notify(`❌ Tu ticket del Mundial no acertó`, "error"); }, 800);
+                    }
                     return b;
                 });
-                if(changed){localStorage.setItem('wcBets',JSON.stringify(bets));if(this.activeTab==='mis') this.renderMyBets();}
+                if (changed) {
+                    localStorage.setItem('wcBets', JSON.stringify(bets));
+                    if (this.activeTab === 'mis') this.renderMyBets();
+                }
             },
 
-            renderMyBets(){
-                const list=document.getElementById('wc-my-bets-list');
-                if(!list) return;
-                let bets=JSON.parse(localStorage.getItem('wcBets')||'[]').filter(b=>b.userId===State.user?.id).reverse();
-                if(bets.length===0){list.innerHTML=`<div style="text-align:center;padding:48px 0;"><div style="font-size:3rem;margin-bottom:12px;">📋</div><p style="color:#555;font-size:10px;font-weight:700;text-transform:uppercase;">Sin apuestas aún</p></div>`;return;}
-                list.innerHTML=bets.map(b=>{
-                    const sc=b.status==='won'?'#10b981':b.status==='lost'?'#ef4444':'#fbbf24';
-                    const st=b.status==='won'?'✅ GANADO':b.status==='lost'?'❌ PERDIDO':'⏳ PENDIENTE';
-                    const d=new Date(b.created);
-                    return `<div class="match-card ${b.status==='won'?'settled-win':b.status==='lost'?'settled-loss':'has-bet'}" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">${d.toLocaleDateString('es-MX')} ${d.toTimeString().slice(0,5)}</span><span style="font-size:9px;font-weight:900;color:${sc};text-transform:uppercase;">${st}</span></div>${b.picks.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><div><span style="font-size:8px;color:#555;font-weight:700;">${p.matchHome} vs ${p.matchAway}</span><div style="font-size:10px;font-weight:900;color:white;">${p.label}</div></div><span style="font-family:'Archivo Black',sans-serif;color:#10b981;font-size:12px;">${p.odd.toFixed(2)}</span></div>`).join('')}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);"><div><span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">Apostado</span><div style="font-family:'Archivo Black',sans-serif;color:white;font-size:14px;">$${b.amount.toFixed(2)}</div></div><div style="text-align:right;"><span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">Cuota · Potencial</span><div style="font-family:'Archivo Black',sans-serif;color:${sc};font-size:14px;">${b.totalOdd.toFixed(2)}x · $${b.potentialWin.toFixed(2)}</div></div></div>${b.status==='won'?`<div style="margin-top:8px;text-align:center;font-size:11px;font-weight:900;color:#10b981;background:rgba(16,185,129,0.08);padding:8px;border-radius:0.8rem;">🏆 GANASTE $${b.potentialWin.toFixed(2)}</div>`:''}</div>`;
+            renderMyBets() {
+                const list = document.getElementById('wc-my-bets-list');
+                let bets = JSON.parse(localStorage.getItem('wcBets') || '[]')
+                    .filter(b => b.userId === State.user?.id).reverse();
+                if (bets.length === 0) {
+                    list.innerHTML = `<div style="text-align:center;padding:48px 0;"><div style="font-size:3rem;margin-bottom:12px;">📋</div><p style="color:#555;font-size:10px;font-weight:700;text-transform:uppercase;">Sin apuestas aún</p></div>`;
+                    return;
+                }
+                list.innerHTML = bets.map(b => {
+                    const sc = b.status==='won'?'#10b981':b.status==='lost'?'#ef4444':'#fbbf24';
+                    const st = b.status==='won'?'✅ GANADO':b.status==='lost'?'❌ PERDIDO':'⏳ PENDIENTE';
+                    const d  = new Date(b.created);
+                    return `
+                    <div class="match-card ${b.status==='won'?'settled-win':b.status==='lost'?'settled-loss':'has-bet'}" style="margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">${d.toLocaleDateString('es-MX')} ${d.toTimeString().slice(0,5)}</span>
+                            <span style="font-size:9px;font-weight:900;color:${sc};text-transform:uppercase;">${st}</span>
+                        </div>
+                        ${b.picks.map(p => {
+                            // Incluimos el marcador en el historial de "Mis Apuestas"
+                            const mObj = WC.matches.find(x => x.id === p.matchId);
+                            const scoreTag = (mObj && (mObj.status === 'live' || mObj.status === 'finished'))
+                                ? `<span style="color:${mObj.status==='live'?'#ef4444':'#10b981'};font-weight:900;margin:0 4px;">${mObj.scoreHome}-${mObj.scoreAway}</span>`
+                                : `<span style="margin:0 4px;">vs</span>`;
+                            
+                            return `
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+                                <div>
+                                    <span style="font-size:8px;color:#555;font-weight:700;display:flex;align-items:center;">${p.matchHome} ${scoreTag} ${p.matchAway}</span>
+                                    <div style="font-size:10px;font-weight:900;color:white;">${p.label}</div>
+                                </div>
+                                <span style="font-family:'Archivo Black',sans-serif;color:#10b981;font-size:12px;">${p.odd.toFixed(2)}</span>
+                            </div>`;
+                        }).join('')}
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
+                            <div><span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">Apostado</span>
+                            <div style="font-family:'Archivo Black',sans-serif;color:white;font-size:14px;">$${b.amount.toFixed(2)}</div></div>
+                            <div style="text-align:right;"><span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">Cuota · Potencial</span>
+                            <div style="font-family:'Archivo Black',sans-serif;color:${sc};font-size:14px;">${b.totalOdd.toFixed(2)}x · $${b.potentialWin.toFixed(2)}</div></div>
+                        </div>
+                        ${b.status==='won'?`<div style="margin-top:8px;text-align:center;font-size:11px;font-weight:900;color:#10b981;background:rgba(16,185,129,0.08);padding:8px;border-radius:0.8rem;">🏆 GANASTE $${b.potentialWin.toFixed(2)}</div>`:''}
+                    </div>`;
                 }).join('');
             }
         };
 
-
-                // Patch: add saveApiKey + banner logic to WC
         WC.saveApiKey = function() {
             const inp = document.getElementById('api-key-input');
             const key = (inp?.value || '').trim();
@@ -887,7 +1026,6 @@
             this.loadFixtures(true);
         };
 
-        // On init, load key from localStorage and show banner if missing
         const _wcInitOrig = WC.init.bind(WC);
         WC.init = function() {
             const saved = localStorage.getItem('wc_rapidapi_key');
