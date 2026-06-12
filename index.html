@@ -399,7 +399,27 @@
             async init() { let p = 0; const i = setInterval(() => { p += 25; document.getElementById('boot-bar').style.width = `${p}%`; if(p >= 100) { clearInterval(i); this.check(); } }, 100); },
             async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); } else { document.getElementById('auth-view').classList.remove('hidden-view'); } },
             async loadBalance() { const { data } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).maybeSingle(); State.balance = data ? data.saldo : 0; UI.updateBalance(); },
-            subscribeBalance() { sb.channel('balance_sync').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'usuarios', filter: `id=eq.${State.user.id}` }, (payload) => { if (payload.new && typeof payload.new.saldo !== 'undefined' && !State.isSpinning) { State.balance = payload.new.saldo; UI.updateBalance(); } }).subscribe(); },
+            subscribeBalance() {
+                // Canal único por usuario para evitar conflictos de realtime
+                const chName = 'bal_' + State.user.id.replace(/-/g,'').slice(0,12);
+                try {
+                    const existing = sb.getChannels().find(c => c.topic === 'realtime:' + chName);
+                    if (existing) { sb.removeChannel(existing); }
+                } catch(e) {}
+                sb.channel(chName)
+                    .on('postgres_changes', {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'usuarios',
+                        filter: `id=eq.${State.user.id}`
+                    }, (payload) => {
+                        if (payload.new && typeof payload.new.saldo !== 'undefined' && !State.isSpinning) {
+                            State.balance = payload.new.saldo;
+                            UI.updateBalance();
+                        }
+                    })
+                    .subscribe();
+            },
             async processPendingWins() { try { let saved = JSON.parse(localStorage.getItem('pendingWins') || '[]'); let userWins = saved.filter(w => w.userId === State.user.id); if (userWins.length > 0) { let totalWin = userWins.reduce((sum, w) => sum + w.amount, 0); if (totalWin > 0) { await this.updateBalanceDB(totalWin); State.balance += totalWin; UI.updateBalance(); await this.recordHistory({ user_id: State.user.id, type: 'bets', amount: totalWin, label: 'COBRO AUTO (DESCONEXIÓN)', status: 'completed' }); setTimeout(() => { UI.notify(`Recuperaste $${totalWin.toFixed(2)} de apuesta pausada`, "success"); playSfx('win'); }, 2500); } saved = saved.filter(w => w.userId !== State.user.id); localStorage.setItem('pendingWins', JSON.stringify(saved)); } } catch(e) { console.error(e); } },
             async updateBalanceDB(amount) { const { data, error } = await sb.rpc('modificar_saldo', { user_id: State.user.id, monto: amount }); if (error) { const { data: current } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single(); await sb.from('usuarios').update({ saldo: current.saldo + amount }).eq('id', State.user.id); } },
             async claimBonus() { if(State.isProcessing) return; State.isProcessing = true; playSfx('win'); try { await this.updateBalanceDB(30); UI.notify("Bono reclamado", "success"); location.reload(); } catch(e) { UI.notify("Error", "error"); } finally { State.isProcessing = false; } },
@@ -834,7 +854,6 @@
             }
         };
 
-        Core.init();
         Core.init();
     </script>
 
