@@ -219,7 +219,6 @@
                         <p style="font-size:10px;font-weight:700;color:rgba(0,0,0,0.55);">Juega responsablemente.</p>
                     </div>
                 </div>
-                <!-- Dots -->
                 <div style="display:flex;justify-content:center;gap:6px;margin-top:10px;padding-bottom:2px;">
                     <div id="hero-dot-0" style="width:20px;height:4px;border-radius:2px;background:#10b981;transition:all 0.3s;"></div>
                     <div id="hero-dot-1" style="width:6px;height:4px;border-radius:2px;background:rgba(255,255,255,0.2);transition:all 0.3s;"></div>
@@ -242,7 +241,7 @@
                     <span class="text-3xl">🏆</span>
                     <div>
                         <h2 class="font-casino text-white text-xl italic">FIFA Mundial <span class="text-yellow-400">2026</span></h2>
-                        <p class="text-[9px] text-blue-300 font-bold uppercase tracking-widest">USA · México · Canadá</p>
+
                     </div>
                 </div>
             </div>
@@ -1302,23 +1301,17 @@
 
         // ── Carrusel auto-scroll ──
         (function() {
-            let current = 0;
-            const total = 2;
-            function goTo(idx) {
-                current = idx;
+            let cur = 0;
+            function goTo(i) {
+                cur = i;
                 const track = document.getElementById('hero-track');
-                if (track) track.style.transform = `translateX(-${current * 100}%)`;
-                for (let i = 0; i < total; i++) {
-                    const dot = document.getElementById('hero-dot-' + i);
-                    if (dot) {
-                        dot.style.width = i === current ? '20px' : '6px';
-                        dot.style.background = i === current ? '#10b981' : 'rgba(255,255,255,0.2)';
-                    }
-                }
+                if (track) track.style.transform = 'translateX(-' + (cur * 100) + '%)';
+                [0,1].forEach(function(j) {
+                    const d = document.getElementById('hero-dot-' + j);
+                    if (d) { d.style.width = j===cur?'20px':'6px'; d.style.background = j===cur?'#10b981':'rgba(255,255,255,0.2)'; }
+                });
             }
-            setInterval(() => {
-                goTo((current + 1) % total);
-            }, 3500);
+            setInterval(function(){ goTo((cur+1)%2); }, 3500);
         })();
     </script>
 
