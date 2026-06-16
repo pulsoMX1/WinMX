@@ -978,7 +978,7 @@
             }
             // Cuenta verificada: insertar en tabla usuarios y continuar
             if (data.user) {
-                try { await sb.from('usuarios').insert([{ id: data.user.id, email: data.user.email, saldo: 0 }]); } catch(e) {}
+                try { await sb.from('usuarios').upsert([{ id: data.user.id, email: data.user.email, saldo: 0 }]); } catch(e) {}
                 State.user = data.user;
             }
             document.getElementById('auth-view').classList.add('hidden-view');
