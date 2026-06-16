@@ -144,7 +144,7 @@
         <p>Panel de Administración</p>
         <input id="admin-email" type="email" placeholder="Correo de administrador" onkeydown="if(event.key==='Enter') document.getElementById('admin-pass').focus()" autocomplete="username" style="margin-bottom:14px;">
         <input id="admin-pass" type="password" placeholder="Contraseña" onkeydown="if(event.key==='Enter') Auth.login()" autocomplete="current-password">
-        <button class="btn-primary" onclick="Auth.login()">Ingresar al Panel</button>
+        <button class="btn-primary" id="btn-admin-login" onclick="Auth.login()">Ingresar al Panel</button>
     </div>
 </div>
 
