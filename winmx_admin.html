@@ -532,10 +532,15 @@ const Admin = {
             status: 'live',
             minute: 1,
             score_home: 0,
-            score_away: 0
+            score_away: 0,
+            notify_live: true   // ← activa la notificación en el casino
         }).eq('id', matchId);
         if (error) return notify('Error: ' + error.message, 'error');
-        notify('✅ Partido iniciado — aparece EN VIVO en el casino', 'success');
+        // Resetear notify_live tras 3s para que no vuelva a dispararse
+        setTimeout(async () => {
+            await sb.from('wc_matches').update({ notify_live: false }).eq('id', matchId);
+        }, 3000);
+        notify('✅ Partido iniciado — notificación enviada a todos los usuarios', 'success');
         await this.loadMatches();
     },
 
