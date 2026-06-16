@@ -605,23 +605,14 @@ function renderBetsList() {
     }).join('');
 }
 
-// ── Realtime para que el admin vea cambios también ─────────
-function subscribeAdmin() {
-    sb.channel('admin_live').on('postgres_changes', { event: '*', schema: 'public', table: 'wc_matches' }, () => {
-        loadAll();
-    }).subscribe((status) => {
-        const el = document.getElementById('conn-indicator');
-        if (status === 'SUBSCRIBED') {
-            el.innerHTML = '<span style="width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;"></span> Conectado en tiempo real';
-            el.style.color = '#10b981';
-        }
-    });
-}
-
 // ── INIT ────────────────────────────────────────────────────
 (async () => {
     await loadAll();
-    subscribeAdmin();
+    const el = document.getElementById('conn-indicator');
+    el.innerHTML = '<span style="width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;"></span> Listo';
+    el.style.color = '#10b981';
+    // Auto-refresh cada 15 segundos sin necesidad de WebSocket
+    setInterval(loadAll, 15000);
 })();
 </script>
 </body>
