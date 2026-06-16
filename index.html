@@ -128,6 +128,16 @@
         </div>
     </div>
 
+    <!-- BAN / DELETE NOTICE — pantalla a prueba de cierre, solo permite cerrar sesión -->
+    <div id="ban-view" class="hidden-view fixed inset-0 z-[2000] bg-black flex items-center justify-center p-6">
+        <div class="w-full max-w-sm text-center">
+            <div class="text-6xl mb-6">🚫</div>
+            <h2 class="text-2xl font-casino italic mb-4 text-red-500">Cuenta Suspendida</h2>
+            <p id="ban-message-text" class="text-sm font-bold text-zinc-300 mb-10 leading-relaxed whitespace-pre-wrap"></p>
+            <button onclick="BanGuard.acknowledgeAndLeave()" class="btn-action w-full py-5 font-casino text-lg" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 8px 20px rgba(239,68,68,0.3);">Cerrar Sesión</button>
+        </div>
+    </div>
+
     <div id="bonus-view" class="hidden-view fixed inset-0 z-[500] bg-black flex items-center justify-center p-6">
         <div class="glass p-10 w-full max-w-sm text-center animate__animated animate__zoomIn">
             <div class="text-6xl mb-6">🎁</div>
@@ -436,9 +446,95 @@
             switchTab(tab) { playSfx('click'); document.getElementById('login-container').classList.toggle('hidden-view', tab==='register'); document.getElementById('register-container').classList.toggle('hidden-view', tab==='login'); }
         };
 
+        // ── BanGuard ────────────────────────────────────────────────
+        // Detecta en tiempo real si el admin marcó esta cuenta para eliminación
+        // (tabla pending_bans). Si es así, bloquea TODA la interacción con una
+        // pantalla a pantalla completa que no se puede cerrar excepto con el
+        // botón "Cerrar Sesión". El borrado real (Auth + tablas) solo ocurre
+        // cuando el usuario pulsa ese botón, garantizando que vea el mensaje
+        // completo antes de perder acceso a cualquier dato.
+        const BanGuard = {
+            triggered: false,
+
+            showBanScreen(message) {
+                if (this.triggered) return; // evita mostrarlo dos veces
+                this.triggered = true;
+                document.getElementById('ban-message-text').innerText = message || 'Tu cuenta ha sido suspendida.';
+                document.getElementById('ban-view').classList.remove('hidden-view');
+                // Bloquear cualquier otra interacción de la app por completo
+                document.body.style.overflow = 'hidden';
+            },
+
+            // Revisa al iniciar sesión si ya había un ban pendiente desde antes
+            // (por ejemplo, si el admin lo marcó mientras el usuario estaba desconectado)
+            async checkExistingBan() {
+                if (!State.user) return;
+                const { data, error } = await sb
+                    .from('pending_bans')
+                    .select('message')
+                    .eq('user_id', State.user.id)
+                    .maybeSingle();
+                if (!error && data) {
+                    this.showBanScreen(data.message);
+                }
+            },
+
+            // Escucha en tiempo real por si el admin marca el ban MIENTRAS
+            // el usuario tiene la app abierta.
+            subscribeRealtime() {
+                if (!State.user) return;
+                const chName = 'ban_' + State.user.id.replace(/-/g,'').slice(0,12);
+                try {
+                    const existing = sb.getChannels().find(c => c.topic === 'realtime:' + chName);
+                    if (existing) { sb.removeChannel(existing); }
+                } catch(e) {}
+                sb.channel(chName)
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'pending_bans',
+                        filter: `user_id=eq.${State.user.id}`
+                    }, (payload) => {
+                        if (payload.new && payload.new.message) {
+                            this.showBanScreen(payload.new.message);
+                        }
+                    })
+                    .subscribe();
+            },
+
+            // Al pulsar "Cerrar Sesión" en la pantalla de bloqueo:
+            // 1. Dispara la Edge Function que borra TODO (Auth + tablas) de forma permanente.
+            //    Esto está autorizado porque existe un registro en pending_bans creado
+            //    por un admin a nombre de este mismo usuario — ver admin-delete-user.
+            // 2. Cierra la sesión local y redirige al login.
+            async acknowledgeAndLeave() {
+                const btn = document.querySelector('#ban-view button');
+                if (btn) { btn.disabled = true; btn.innerText = 'Cerrando sesión...'; }
+                try {
+                    const { data: { session } } = await sb.auth.getSession();
+                    if (session) {
+                        const ADMIN_DELETE_URL = DB_CONFIG.url + '/functions/v1/admin-delete-user';
+                        await fetch(ADMIN_DELETE_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': DB_CONFIG.key,
+                                'Authorization': 'Bearer ' + session.access_token
+                            },
+                            body: JSON.stringify({ target_user_id: session.user.id })
+                        });
+                        // No bloqueamos el logout si esto falla por red — el admin
+                        // siempre puede usar "Forzar eliminación ahora" como respaldo.
+                    }
+                } catch(e) { /* no-op: continuar al logout de cualquier forma */ }
+                await sb.auth.signOut();
+                location.reload();
+            }
+        };
+
         const Core = {
             async init() { let p = 0; const i = setInterval(() => { p += 25; document.getElementById('boot-bar').style.width = `${p}%`; if(p >= 100) { clearInterval(i); this.check(); } }, 100); },
-            async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); } else { document.getElementById('auth-view').classList.remove('hidden-view'); } },
+            async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); await BanGuard.checkExistingBan(); BanGuard.subscribeRealtime(); } else { document.getElementById('auth-view').classList.remove('hidden-view'); } },
             async loadBalance() { const { data } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).maybeSingle(); State.balance = data ? data.saldo : 0; UI.updateBalance(); },
             subscribeBalance() {
                 // Canal único por usuario para evitar conflictos de realtime
