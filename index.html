@@ -689,7 +689,7 @@
                             : `<div style="padding:4px 10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.06);"><span style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#444;">VS</span></div>`}
                         <div style="flex:1;text-align:left;"><span style="font-size:12px;font-weight:900;color:white;">${m.away}</span></div>
                     </div>
-                    <div style="display:flex;gap:8px;${isLive ? 'opacity:0.4;pointer-events:none;' : ''}">
+                    <div style="display:flex;gap:8px;${(isLive && m.bets_paused) ? 'opacity:0.4;pointer-events:none;' : ''}">
                         <div class="odd-btn ${h1Sel}" onclick="WC.togglePick('${m.id}','1','${m.home.replace(/'/g,"\\'")}',${m.home_odd})">
                             <span class="odd-label">1 Local</span><span class="odd-value">${(m.home_odd||2).toFixed(2)}</span>
                         </div>
@@ -700,14 +700,15 @@
                             <span class="odd-label">2 Visitante</span><span class="odd-value">${(m.away_odd||3.5).toFixed(2)}</span>
                         </div>
                     </div>
-                    ${isLive ? `<div style="text-align:center;margin-top:8px;font-size:9px;color:#ef4444;font-weight:700;text-transform:uppercase;">⚽ Partido en curso — apuestas cerradas</div>` : ''}
+                    ${(isLive && m.bets_paused) ? `<div style="text-align:center;margin-top:8px;font-size:9px;color:#ef4444;font-weight:700;text-transform:uppercase;">⏸ Apuestas pausadas temporalmente</div>` : (isLive ? `<div style="text-align:center;margin-top:8px;font-size:9px;color:#10b981;font-weight:700;text-transform:uppercase;">⚽ EN VIVO — Apuestas abiertas</div>` : '')}
                 </div>`;
             },
 
             togglePick(matchId, pick, label, odd) {
                 playSfx('click');
                 const m = this.matches.find(x => x.id === matchId);
-                if (!m || m.status === 'live' || m.status === 'finished') return;
+                if (!m || m.status === 'finished') return;
+                if (m.status === 'live' && m.bets_paused) return UI.notify("⏸ Apuestas pausadas en este partido", "error");
                 if (this.slip[matchId] && this.slip[matchId].pick === pick) {
                     delete this.slip[matchId];
                 } else {
