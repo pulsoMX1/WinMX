@@ -1616,31 +1616,101 @@
     </div>
 
     <script>
-        // ── CARRUSEL HERO AUTO-SCROLL ──
-        (function() {
-            let current = 0;
-            const total = 3;
-            function goTo(idx) {
-                current = idx;
-                const track = document.getElementById('hero-track');
-                if (!track) return;
-                track.style.transform = 'translateX(-' + (current * 100) + '%)';
-                for (let i = 0; i < total; i++) {
-                    const dot = document.getElementById('hero-dot-' + i);
-                    if (!dot) continue;
-                    if (i === current) {
-                        dot.style.width = '20px';
-                        dot.style.background = '#10b981';
-                    } else {
-                        dot.style.width = '6px';
-                        dot.style.background = 'rgba(255,255,255,0.2)';
-                    }
-                }
+        // ── CARRUSEL HERO AUTO-SCROLL + SWIPE ──
+(function() {
+    let current = 0;
+    const total = 3;
+    let autoTimer = null;
+    let isDragging = false;
+    let startX = 0;
+    let currentTranslate = 0;
+    let prevTranslate = 0;
+    const track = document.getElementById('hero-track');
+
+    function goTo(idx) {
+        current = ((idx % total) + total) % total; // soporta índices negativos
+        if (!track) return;
+        track.style.transition = 'transform 0.5s cubic-bezier(0.4,0,0.2,1)';
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+        prevTranslate = -current * (track.parentElement.offsetWidth || 1);
+        for (let i = 0; i < total; i++) {
+            const dot = document.getElementById('hero-dot-' + i);
+            if (!dot) continue;
+            if (i === current) {
+                dot.style.width = '20px';
+                dot.style.background = '#10b981';
+            } else {
+                dot.style.width = '6px';
+                dot.style.background = 'rgba(255,255,255,0.2)';
             }
-            setInterval(() => {
-                goTo((current + 1) % total);
-            }, 9000);
-        })();
+        }
+    }
+
+    function startAuto() {
+        clearInterval(autoTimer);
+        autoTimer = setInterval(() => {
+            goTo((current + 1) % total);
+        }, 9000);
+    }
+
+    function getPositionX(e) {
+        return e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+    }
+
+    function dragStart(e) {
+        if (!track) return;
+        isDragging = true;
+        startX = getPositionX(e);
+        track.style.transition = 'none';
+        clearInterval(autoTimer); // pausar autoplay mientras el usuario interactúa
+    }
+
+    function dragMove(e) {
+        if (!isDragging || !track) return;
+        const currentX = getPositionX(e);
+        const diff = currentX - startX;
+        const containerWidth = track.parentElement.offsetWidth || 1;
+        currentTranslate = prevTranslate + diff;
+        track.style.transform = `translateX(${(currentTranslate / containerWidth) * 100}%)`;
+    }
+
+    function dragEnd(e) {
+        if (!isDragging || !track) return;
+        isDragging = false;
+        const endX = (e.type.includes('mouse') ? e.pageX : (e.changedTouches ? e.changedTouches[0].clientX : startX));
+        const diff = endX - startX;
+        const threshold = 50; // px mínimos para considerar swipe
+
+        if (diff < -threshold && current < total - 1) {
+            goTo(current + 1); // swipe izquierda → siguiente
+        } else if (diff > threshold && current > 0) {
+            goTo(current - 1); // swipe derecha → anterior
+        } else if (diff < -threshold && current === total - 1) {
+            goTo(0); // loop al final
+        } else if (diff > threshold && current === 0) {
+            goTo(total - 1); // loop al inicio
+        } else {
+            goTo(current); // regresa a su posición si no superó el umbral
+        }
+        startAuto();
+    }
+
+    if (track) {
+        // Touch events (móvil)
+        track.addEventListener('touchstart', dragStart, { passive: true });
+        track.addEventListener('touchmove', dragMove, { passive: true });
+        track.addEventListener('touchend', dragEnd);
+
+        // Mouse events (escritorio)
+        track.addEventListener('mousedown', dragStart);
+        track.addEventListener('mousemove', dragMove);
+        track.addEventListener('mouseup', dragEnd);
+        track.addEventListener('mouseleave', (e) => { if (isDragging) dragEnd(e); });
+    }
+
+    goTo(0);
+    startAuto();
+})();
 
         setInterval(() => {
             const container = document.getElementById('messenger-container');
