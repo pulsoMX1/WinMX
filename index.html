@@ -552,7 +552,7 @@
         };
 
         const AuthManager = {
-            async login() { if(State.isProcessing) return; const e = document.getElementById('login-email').value, p = document.getElementById('login-password').value; if(!e || !p) return UI.notify("Completa campos", "error"); const btn = document.getElementById('btn-login'); btn.disabled = true; const { data, error } = await sb.auth.signInWithPassword({ email: e, password: p }); if(error) { UI.notify(error.message, "error"); btn.disabled = false; } else location.reload(); },
+            async login() { if(State.isProcessing) return; const e = document.getElementById('login-email').value, p = document.getElementById('login-password').value; if(!e || !p) return UI.notify("Completa campos", "error"); const btn = document.getElementById('btn-login'); btn.disabled = true; const { data, error } = await sb.auth.signInWithPassword({ email: e, password: p }); if(error) { UI.notify(error.message, "error"); btn.disabled = false; } else { State.user = data.user; updateLastLogin().then(() => location.reload()).catch(() => location.reload()); } },
             async register() { if(State.isProcessing) return; if(!document.getElementById('terms-check').checked) return UI.notify("Acepta términos", "error"); const e = document.getElementById('reg-email').value, p = document.getElementById('reg-password').value; if(!e || !p) return UI.notify("Completa campos", "error"); const btn = document.getElementById('btn-register'); btn.disabled = true; btn.innerText = "Registrando..."; const refParam = new URLSearchParams(window.location.search).get('ref') || ''; const { data, error } = await sb.auth.signUp({ email: e, password: p, options: { data: { referido_por: refParam } } }); btn.disabled = false; btn.innerText = "Crear Cuenta"; if(error) { UI.notify(error.message, "error"); } else { OTPManager.mostrarVerificacion(e); } },
             async logout() { PresenceTracker.leave(); await sb.auth.signOut(); location.reload(); },
             switchTab(tab) { playSfx('click'); document.getElementById('login-container').classList.toggle('hidden-view', tab==='register'); document.getElementById('register-container').classList.toggle('hidden-view', tab==='login'); }
@@ -671,9 +671,22 @@
             }
         };
 
+
+        // ── TRACKING DE ÚLTIMA CONEXIÓN ──
+        async function updateLastLogin() {
+            if (!State.user) return;
+            try {
+                const now = new Date();
+                const { error } = await sb.from('usuarios').update({
+                    last_login: now.toISOString()
+                }).eq('id', State.user.id);
+                if (error) console.log('Last login update note:', error);
+            } catch(e) { console.log('Last login error:', e); }
+        }
+        // ──────────────────────────────────────────────────────────────
         const Core = {
             async init() { let p = 0; const i = setInterval(() => { p += 25; document.getElementById('boot-bar').style.width = `${p}%`; if(p >= 100) { clearInterval(i); this.check(); } }, 100); },
-            async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); await BanGuard.checkExistingBan(); BanGuard.subscribeRealtime(); PresenceTracker.join(); // Procesar referido si el usuario llegó con ?ref= en la URL
+            async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; updateLastLogin(); document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); await BanGuard.checkExistingBan(); BanGuard.subscribeRealtime(); PresenceTracker.join(); // Procesar referido si el usuario llegó con ?ref= en la URL
                 setTimeout(() => Referidos.procesarReferidoSiExiste(), 1500);
             } else { document.getElementById('auth-view').classList.remove('hidden-view'); } },
             async loadBalance() { const { data } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).maybeSingle(); State.balance = data ? data.saldo : 0; UI.updateBalance(); },
@@ -1217,6 +1230,7 @@
             if (data.user) {
                 try { await sb.from('usuarios').upsert([{ id: data.user.id, email: data.user.email, saldo: 0 }]); } catch(e) {}
                 State.user = data.user;
+                updateLastLogin();
             }
             document.getElementById('auth-view').classList.add('hidden-view');
             document.getElementById('bonus-view').classList.remove('hidden-view');
