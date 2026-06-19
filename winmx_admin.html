@@ -116,6 +116,16 @@
         .last-seen-badge.online { color: #10b981; }
         .last-seen-dot { width: 5px; height: 5px; border-radius: 50%; background: #555; flex-shrink: 0; }
         .last-seen-badge.online .last-seen-dot { background: #10b981; animation: blink 1.2s infinite; }
+        /* ── IP TRACKING BADGE ── */
+        .ip-text { font-family: monospace; font-size: 10px; color: #aaa; }
+        .ip-status-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; }
+        .ip-status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+        .ip-normal { color: #555; }
+        .ip-normal .ip-status-dot { background: #555; }
+        .ip-suspicious { color: var(--yellow); }
+        .ip-suspicious .ip-status-dot { background: var(--yellow); }
+        .ip-fraud { color: var(--red); }
+        .ip-fraud .ip-status-dot { background: var(--red); animation: blink 1.2s infinite; }
         @media(max-width: 1024px) { .stats-row { grid-template-columns: repeat(4, 1fr); } }
         @media(max-width: 768px) {
             .main { padding: 16px; }
@@ -221,19 +231,27 @@
 
         <div id="panel-users" style="display:none;">
             <div class="section-title">Usuarios registrados</div>
-            <input id="users-search" type="text" class="search-input" placeholder="Buscar por correo..." oninput="Admin.filterUsers()">
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px; flex-wrap:wrap;">
+                <input id="users-search" type="text" class="search-input" style="margin-bottom:0;" placeholder="Buscar por correo o IP..." oninput="Admin.filterUsers()">
+                <div style="display:flex; align-items:center; gap:12px; font-size:9px; font-weight:900; text-transform:uppercase;">
+                    <span style="display:flex; align-items:center; gap:5px; color:#555;"><span style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;"></span> Normal</span>
+                    <span style="display:flex; align-items:center; gap:5px; color:#fbbf24;"><span style="width:8px;height:8px;border-radius:50%;background:#fbbf24;display:inline-block;"></span> Sospechoso (2)</span>
+                    <span style="display:flex; align-items:center; gap:5px; color:#ef4444;"><span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;"></span> Fraude (3+)</span>
+                </div>
+            </div>
             <div style="overflow-x:auto;">
                 <table class="users-table">
                     <thead>
                         <tr>
                             <th>Correo</th>
+                            <th>Dirección IP</th>
                             <th>Saldo</th>
                             <th>Registrado</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody id="users-tbody">
-                        <tr><td colspan="4" style="text-align:center; color:#444; padding:40px;">Cargando...</td></tr>
+                        <tr><td colspan="5" style="text-align:center; color:#444; padding:40px;">Cargando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -425,14 +443,35 @@ const Admin = {
     },
 
     users: [],
+    ipCounts: {},
     async loadUsers() {
-        // ── Se agrega last_seen al select ──
+        // ── Se agrega last_seen e ip_address al select ──
         const { data, error } = await sb
             .from('usuarios')
-            .select('id, email, saldo, created_at, last_seen')
+            .select('id, email, saldo, created_at, last_seen, ip_address')
             .order('created_at', { ascending: false });
         if (error) { notify('Error cargando usuarios: ' + error.message, 'error'); return; }
-        this.users = data || []; this.renderUsers(); this.updateStats();
+        this.users = data || [];
+        this.calcularConteoIPs();
+        this.renderUsers(); this.updateStats();
+    },
+
+    // ── IP TRACKING: cuenta cuántas cuentas distintas comparten cada IP ──
+    calcularConteoIPs() {
+        const counts = {};
+        this.users.forEach(u => {
+            if (!u.ip_address) return;
+            counts[u.ip_address] = (counts[u.ip_address] || 0) + 1;
+        });
+        this.ipCounts = counts;
+    },
+
+    estadoPorIP(ip) {
+        if (!ip) return { cls: 'ip-normal', label: 'Sin IP registrada' };
+        const count = this.ipCounts[ip] || 1;
+        if (count >= 3) return { cls: 'ip-fraud', label: `🚨 FRAUDE · ${count} cuentas en esta IP` };
+        if (count === 2) return { cls: 'ip-suspicious', label: `⚠️ Sospechoso · ${count} cuentas en esta IP` };
+        return { cls: 'ip-normal', label: 'IP normal' };
     },
 
     filterUsers() { this.renderUsers(); },
@@ -440,10 +479,12 @@ const Admin = {
     renderUsers() {
         const tbody = document.getElementById('users-tbody');
         const term = (document.getElementById('users-search')?.value || '').trim().toLowerCase();
-        const filtered = term ? this.users.filter(u => (u.email || '').toLowerCase().includes(term)) : this.users;
+        const filtered = term
+            ? this.users.filter(u => (u.email || '').toLowerCase().includes(term) || (u.ip_address || '').toLowerCase().includes(term))
+            : this.users;
 
         if (!filtered.length) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#444;padding:40px;font-size:12px;text-transform:uppercase;">Sin usuarios${term ? ' que coincidan' : ''}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#444;padding:40px;font-size:12px;text-transform:uppercase;">Sin usuarios${term ? ' que coincidan' : ''}</td></tr>`;
             return;
         }
 
@@ -460,11 +501,21 @@ const Admin = {
                    </div>`
                 : `<div class="last-seen-badge">Sin conexión registrada</div>`;
 
+            // ── IP Tracking ──
+            const ipEstado = this.estadoPorIP(u.ip_address);
+            const ipHtml = `
+                <span class="ip-text">${u.ip_address || '—'}</span>
+                <div class="ip-status-badge ${ipEstado.cls}">
+                    <div class="ip-status-dot"></div>
+                    ${ipEstado.label}
+                </div>`;
+
             return `<tr>
                 <td style="font-weight:700;">
                     ${u.email || '(sin correo)'}
                     ${lastSeenHtml}
                 </td>
+                <td>${ipHtml}</td>
                 <td style="color:#10b981;font-weight:700;">$${(u.saldo || 0).toFixed(2)}</td>
                 <td style="font-size:9px;color:#666;">${fecha}</td>
                 <td><button class="btn-sm btn-danger" onclick="Admin.openDeleteModal('${u.id}','${(u.email||'').replace(/'/g,"\\'")}', ${u.saldo || 0})"><i class="fas fa-trash"></i> Eliminar</button></td>
@@ -627,7 +678,7 @@ const Admin = {
                     <button class="btn-sm btn-yellow" onclick="Admin.updateMinute('${m.id}')">Guardar</button>
                     <button class="btn-sm btn-gray" onclick="Admin.setPaused('${m.id}')"><i class="fas fa-pause"></i> HT</button>
                 </div>
-                <div class="actions-row" style="align-items:center; gap:6px; flex-wrap:wrap;">
+                <div class="actions-row" style="align-items:center; gap:8px; flex-wrap:wrap;">
                     <span style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;white-space:nowrap;">Cuotas:</span>
                     <input class="score-input" id="o1-${m.id}" type="number" step="0.01" value="${(m.home_odd||2).toFixed(2)}" style="width:54px;" title="Local">
                     <input class="score-input" id="ox-${m.id}" type="number" step="0.01" value="${(m.draw_odd||3.2).toFixed(2)}" style="width:54px;" title="Empate">
