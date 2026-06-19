@@ -88,15 +88,25 @@ const AdminSupport = {
 
     async loadConversations() {
         const { data, error } = await sb.from('support_messages')
-            .select('*, usuarios(email)')
+            .select('*')
             .order('created_at', { ascending: true });
         if (error) { console.error(error); return; }
 
         const grouped = {};
         (data || []).forEach(m => {
-            if (!grouped[m.user_id]) grouped[m.user_id] = { messages: [], email: m.usuarios?.email || 'Sin correo' };
+            if (!grouped[m.user_id]) grouped[m.user_id] = { messages: [], email: m.user_id };
             grouped[m.user_id].messages.push(m);
         });
+        
+        // Obtener emails de usuarios
+        const userIds = Object.keys(grouped);
+        if (userIds.length > 0) {
+            const { data: usuarios } = await sb.from('usuarios').select('id, email').in('id', userIds);
+            (usuarios || []).forEach(u => {
+                if (grouped[u.id]) grouped[u.id].email = u.email || u.id;
+            });
+        }
+        
         this.conversations = grouped;
         this.renderList();
         this.updateGlobalBadge();
@@ -186,7 +196,15 @@ const AdminSupport = {
             sender: 'admin',
             message: text
         }]);
-        if (error) { alert("Error al enviar: " + error.message); }
+        if (error) { 
+            alert("Error al enviar: " + error.message); 
+        } else {
+            // Recargar mensajes inmediatamente
+            const userId = this.activeUserId;
+            await new Promise(r => setTimeout(r, 300));
+            await this.loadConversations();
+            this.openConversation(userId);
+        }
     },
 
     updateGlobalBadge() {
@@ -204,28 +222,14 @@ const AdminSupport = {
     subscribeRealtime() {
         sb.channel('admin_support_live')
             .on('postgres_changes', {
-                event: 'INSERT',
+                event: '*',
                 schema: 'public',
                 table: 'support_messages'
             }, async (payload) => {
-                const userId = payload.new.user_id;
-                if (!this.conversations[userId]) {
-                    const { data } = await sb.from('usuarios').select('email').eq('id', userId).maybeSingle();
-                    this.conversations[userId] = { messages: [], email: data?.email || 'Sin correo' };
-                }
-                this.conversations[userId].messages.push(payload.new);
-                this.renderList();
-                this.updateGlobalBadge();
-                if (this.activeUserId === userId) {
-                    this.renderMessages();
-                    if (payload.new.sender === 'user') {
-                        sb.from('support_messages').update({ read_by_admin: true }).eq('id', payload.new.id).then(() => {});
-                    }
-                }
-                if (payload.new.sender === 'user') {
-                    // pequeño aviso sonoro/visual opcional
-                    document.title = "🔔 Nuevo mensaje | WinMX Admin";
-                    setTimeout(() => { document.title = "Panel de Control | WinMX Admin"; }, 3000);
+                console.log('🔔 Cambio en support_messages:', payload);
+                await this.loadConversations();
+                if (this.activeUserId) {
+                    this.openConversation(this.activeUserId);
                 }
             })
             .subscribe();
@@ -334,13 +338,7 @@ const AdminSupport = {
             });
         }
 
-        // ── Verificar si este es el primer depósito aprobado del usuario ──
-        // FIX: usamos el flag explícito has_used_first_deposit_bonus en la tabla
-        // "usuarios" como fuente principal de verdad (más robusto que contar
-        // registros de "history"), y además checamos esto SIEMPRE ANTES de marcar
-        // el depósito actual como 'completed' para no contaminar el resultado.
         async function esPrimerDeposito(userId) {
-            // 1) Fuente principal: el flag explícito del usuario
             const { data: userData, error: userErr } = await sb
                 .from('usuarios')
                 .select('has_used_first_deposit_bonus')
@@ -351,9 +349,6 @@ const AdminSupport = {
                 if (userData.has_used_first_deposit_bonus === true) return false;
             }
 
-            // 2) Respaldo: revisar si ya tiene depósitos completados previos
-            //    (excluyendo cualquier posibilidad de contar el actual, ya que
-            //    esta función SIEMPRE se llama antes de marcarlo como completed)
             const { data, error } = await sb
                 .from('history')
                 .select('id')
@@ -365,17 +360,14 @@ const AdminSupport = {
             return !data || data.length === 0;
         }
 
-        // ── Activar bono de duplicación para el usuario ──
         async function activarBonoMundial(userId, montoDeposito) {
-            // Verificar que no tenga ya un bono
             const { data: existente } = await sb
                 .from('bonus_depositos')
                 .select('id')
                 .eq('user_id', userId)
                 .maybeSingle();
-            if (existente) return; // ya tiene bono, no duplicar
+            if (existente) return;
 
-            // Insertar el bono — esto dispara el Realtime en el casino del usuario
             const { error } = await sb.from('bonus_depositos').insert([{
                 user_id: userId,
                 amount: montoDeposito,
@@ -386,7 +378,6 @@ const AdminSupport = {
                 return;
             }
 
-            // Marcar en usuarios que ya recibió el bono de primer depósito
             await sb.from('usuarios')
                 .update({ has_used_first_deposit_bonus: true })
                 .eq('id', userId);
@@ -398,17 +389,10 @@ const AdminSupport = {
             const isDeposit = currentType === 'deposits';
             if (!confirm(`¿Deseas ${isDeposit ? "aprobar este depósito" : "confirmar que ya enviaste el retiro"}?`)) return;
 
-            // ── FIX PRINCIPAL ──────────────────────────────────────────
-            // Antes este chequeo se hacía DESPUÉS de marcar el historial como
-            // 'completed', por lo que esPrimerDeposito() siempre encontraba el
-            // registro recién marcado y devolvía false. Ahora se calcula
-            // ANTES de tocar el historial, así el primer depósito sí se
-            // detecta correctamente y el bono se activa.
             let esPrimero = false;
             if (isDeposit) {
                 esPrimero = await esPrimerDeposito(userId);
             }
-            // ─────────────────────────────────────────────────────────────
 
             const newSaldo = isDeposit ? (currentSaldo + amount) : currentSaldo;
 
@@ -419,7 +403,6 @@ const AdminSupport = {
             }).eq('id', historyId);
 
             if (!errSaldo && !errHist) {
-                // ── BONO MUNDIAL: si es depósito y es el primero, activar bono ──
                 if (isDeposit && esPrimero) {
                     await activarBonoMundial(userId, amount);
                     alert(`✅ Depósito aprobado.\n🎁 Bono de $${amount} MXN activado automáticamente para el usuario.`);
