@@ -702,11 +702,6 @@ h1 {
             <dt>Cantidad</dt>
             <dd id="confirmAmount"></dd>
           </div>
-          <div class="receipt-row receipt-row-total">
-            <dt>Saldo después del envío</dt>
-            <dd id="confirmNewBalance"></dd>
-          </div>
-        </dl>
 
         <div class="notice">
           <i class="icon-clock" aria-hidden="true"></i>
@@ -831,7 +826,6 @@ const NETCOINS_CONFIG = {
     confirmAvatar: document.getElementById("confirmAvatar"),
     confirmUsername: document.getElementById("confirmUsername"),
     confirmAmount: document.getElementById("confirmAmount"),
-    confirmNewBalance: document.getElementById("confirmNewBalance"),
     confirmBtn: document.getElementById("confirmBtn"),
     confirmError: document.getElementById("confirmError"),
 
@@ -1032,8 +1026,8 @@ const NETCOINS_CONFIG = {
     els.confirmAvatar.src = state.avatar_url || "";
     els.confirmAvatar.alt = `Foto de perfil de ${state.username}`;
     els.confirmUsername.textContent = `@${state.username}`;
-    els.confirmAmount.textContent = `${formatNumber(state.paquete.amount)} Netcoins`;
-    els.confirmNewBalance.textContent = `${formatNumber(state.saldo_actual + state.paquete.amount)} Netcoins`;
+    els.confirmAmount.textContent = `${formatNumber(state.paquete.amount)} Robux`;
+
 
     els.confirmError.hidden = true;
     els.confirmBtn.disabled = false;
