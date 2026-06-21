@@ -88,6 +88,7 @@ a { color: inherit; }
     radial-gradient(ellipse 900px 500px at 50% 0%, rgba(255,59,59,0.08), transparent 60%),
     var(--bg);
 }
+.screen--entry[hidden] { display: none; }
 
 .topbar {
   display: flex;
@@ -290,10 +291,37 @@ a { color: inherit; }
 .screen--call { background: #000; overflow: hidden; }
 .call-stage { position: relative; width: 100%; height: 100vh; height: 100dvh; }
 
-.video-remote {
+.video-split {
+  position: absolute; inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.video-pane {
+  position: relative;
+  flex: 1 1 50%;
+  min-height: 0;
+  overflow: hidden;
+  background: #000;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.video-pane:first-child { border-top: none; }
+.video-pane__video {
   width: 100%; height: 100%;
   object-fit: cover;
-  background: #000;
+  display: block;
+}
+.video-pane__video--mirror { transform: scaleX(-1); }
+.video-pane__label {
+  position: absolute;
+  bottom: 10px; left: 12px;
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.5);
+  padding: 3px 8px;
+  border-radius: 4px;
+  z-index: 2;
 }
 
 .overlay-searching {
@@ -429,24 +457,6 @@ a { color: inherit; }
 }
 @media (min-width: 640px) { .hud-id { display: block; } }
 
-.self-preview {
-  position: absolute;
-  bottom: 110px;
-  right: clamp(14px, 3vw, 28px);
-  width: clamp(96px, 22vw, 168px);
-  aspect-ratio: 3/4;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1.5px solid rgba(255,255,255,0.14);
-  background: var(--panel);
-  z-index: 10;
-  box-shadow: 0 8px 24px -6px rgba(0,0,0,0.6);
-}
-.video-self {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1);
-}
 .self-preview__label {
   position: absolute;
   bottom: 6px; left: 8px;
@@ -531,7 +541,6 @@ a { color: inherit; }
 
 /* Responsive */
 @media (max-width: 480px) {
-  .self-preview { bottom: 96px; width: 88px; }
   .ctrl-btn { width: 46px; height: 46px; }
   .ctrl-btn--skip { padding: 0 18px; }
   .hud-controls { gap: 10px; }
@@ -597,7 +606,16 @@ a { color: inherit; }
 <section id="screen-call" class="screen screen--call" hidden>
 
   <div class="call-stage">
-    <video id="video-remote" class="video-remote" autoplay playsinline></video>
+    <div class="video-split">
+      <div class="video-pane video-pane--remote">
+        <video id="video-remote" class="video-pane__video" autoplay playsinline></video>
+        <span class="video-pane__label">DESCONOCIDO</span>
+      </div>
+      <div class="video-pane video-pane--self">
+        <video id="video-self" class="video-pane__video video-pane__video--mirror" autoplay playsinline muted></video>
+        <span class="video-pane__label">TÚ</span>
+      </div>
+    </div>
 
     <div id="overlay-searching" class="overlay-searching">
       <div class="radar" aria-hidden="true">
@@ -628,11 +646,6 @@ a { color: inherit; }
       <div class="hud-id" id="hud-peer-id">PEER #------</div>
     </div>
 
-    <div class="self-preview" id="self-preview">
-      <video id="video-self" class="video-self" autoplay playsinline muted></video>
-      <span class="self-preview__label">TÚ</span>
-    </div>
-
     <div class="hud-controls">
       <button id="btn-mic" class="ctrl-btn" aria-label="Silenciar micrófono" title="Silenciar micrófono">
         <svg viewBox="0 0 24 24" class="ctrl-btn__icon"><path d="M12 14a3 3 0 003-3V6a3 3 0 10-6 0v5a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3" stroke-linecap="round"/></svg>
@@ -641,10 +654,6 @@ a { color: inherit; }
       <button id="btn-skip" class="ctrl-btn ctrl-btn--skip" aria-label="Saltar al siguiente" title="Saltar al siguiente">
         <svg viewBox="0 0 24 24" class="ctrl-btn__icon"><path d="M5 4l9 8-9 8V4zM18 4v16" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="ctrl-btn__text">SIGUIENTE</span>
-      </button>
-
-      <button id="btn-cam" class="ctrl-btn" aria-label="Apagar cámara" title="Apagar cámara">
-        <svg viewBox="0 0 24 24" class="ctrl-btn__icon"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z" stroke-linejoin="round"/></svg>
       </button>
 
       <button id="btn-leave" class="ctrl-btn ctrl-btn--danger" aria-label="Salir" title="Salir">
@@ -991,7 +1000,6 @@ const hudTimer = document.getElementById("hud-timer");
 const hudPeerId = document.getElementById("hud-peer-id");
 
 const btnMic = document.getElementById("btn-mic");
-const btnCam = document.getElementById("btn-cam");
 const btnSkip = document.getElementById("btn-skip");
 const btnLeave = document.getElementById("btn-leave");
 
@@ -1004,7 +1012,6 @@ let connection = null;
 let timerInterval = null;
 let timerSeconds = 0;
 let micOn = true;
-let camOn = true;
 
 // ===================================================================
 // Live "online now" preview on the entry screen (read-only, no match)
@@ -1253,13 +1260,6 @@ btnMic.addEventListener("click", () => {
   micOn = !micOn;
   localStream.getAudioTracks().forEach((t) => (t.enabled = micOn));
   btnMic.classList.toggle("is-off", !micOn);
-});
-
-btnCam.addEventListener("click", () => {
-  if (!localStream) return;
-  camOn = !camOn;
-  localStream.getVideoTracks().forEach((t) => (t.enabled = camOn));
-  btnCam.classList.toggle("is-off", !camOn);
 });
 
 async function endCallCompletely() {
