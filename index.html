@@ -859,77 +859,10 @@
                     .subscribe();
             },
             async processPendingWins() { try { let saved = JSON.parse(localStorage.getItem('pendingWins') || '[]'); let userWins = saved.filter(w => w.userId === State.user.id); if (userWins.length > 0) { let totalWin = userWins.reduce((sum, w) => sum + w.amount, 0); if (totalWin > 0) { await this.updateBalanceDB(totalWin); State.balance += totalWin; UI.updateBalance(); await this.recordHistory({ user_id: State.user.id, type: 'bets', amount: totalWin, label: 'COBRO AUTO (DESCONEXIÓN)', status: 'completed' }); setTimeout(() => { UI.notify(`Recuperaste $${totalWin.toFixed(2)} de apuesta pausada`, "success"); playSfx('win'); }, 2500); } saved = saved.filter(w => w.userId !== State.user.id); localStorage.setItem('pendingWins', JSON.stringify(saved)); } } catch(e) { console.error(e); } },
+            async updateBalanceDB(amount) { const { data, error } = await sb.rpc('modificar_saldo', { user_id: State.user.id, monto: amount }); if (error) { const { data: current } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single(); await sb.from('usuarios').update({ saldo: current.saldo + amount }).eq('id', State.user.id); } },
+            async claimBonus() { if(State.isProcessing) return; State.isProcessing = true; playSfx('win'); try { await this.updateBalanceDB(30); UI.notify("Bono reclamado", "success"); location.reload(); } catch(e) { UI.notify("Error", "error"); } finally { State.isProcessing = false; } },
             async recordHistory(payload) { const cleanPayload = { user_id: payload.user_id, type: payload.type, amount: payload.amount, label: payload.label, status: payload.status }; if (payload.label.includes('RETIRO') || payload.type === 'deposits' || payload.type === 'withdrawals') { cleanPayload.bank_name = payload.bank_name; cleanPayload.account_holder = payload.account_holder; if (payload.evidence_url) cleanPayload.evidence_url = payload.evidence_url; } return await sb.from('history').insert([cleanPayload]); },
-            async claimBonus() {
-    if(State.isProcessing) return;
-    State.isProcessing = true;
-    try {
-        const { data, error } = await sb.rpc('claim_welcome_bonus', { p_user_id: State.user.id });
-        if (error) throw error;
-        if (!data.ok) { UI.notify(data.error, "error"); return; }
-        playSfx('win');
-        UI.notify("Bono reclamado", "success");
-        location.reload();
-    } catch(e) {
-        UI.notify("Error: " + e.message, "error");
-    } finally {
-        State.isProcessing = false;
-    }
-}
-            async confirmTransaction() {
-    if(State.isProcessing) return;
-    const amountInput = document.getElementById('dep-amount').value;
-    const amount = Math.abs(parseFloat(amountInput));
-    const bank = document.getElementById('bank-name').value;
-    const beneficiary = document.getElementById('beneficiary-name').value;
-    if(!amount || amount <= 0 || !bank || !beneficiary) return UI.notify("Completa campos", "error");
-    const btn = document.getElementById('btn-confirm-dep');
-    btn.disabled = true; btn.innerText = "PROCESANDO...";
-    State.isProcessing = true;
-    try {
-        const isDeposit = State.currentTx === 'deposit';
-
-        if (isDeposit) {
-            // ── Depósito: sin cambios, ya era seguro (solo crea registro pending) ──
-            const fileInput = document.getElementById('receipt-input');
-            const file = fileInput.files[0];
-            if(!file) throw new Error("Sube comprobante");
-            const fName = `${Date.now()}_${State.user.id}.jpg`;
-            const uploadRes = await sb.storage.from('comprobantes').upload(fName, file);
-            if(uploadRes.error) throw uploadRes.error;
-            const pub = sb.storage.from('comprobantes').getPublicUrl(fName);
-
-            const { error } = await this.recordHistory({
-                user_id: State.user.id, type: 'deposits', amount: amount,
-                label: 'DEPÓSITO PENDIENTE', status: 'pending',
-                evidence_url: pub.data.publicUrl, bank_name: bank, account_holder: beneficiary
-            });
-            if(error) throw error;
-        } else {
-            // ── Retiro: ahora pasa por la RPC segura ──
-            const clabeVal = document.getElementById('clabe-input-field').value;
-            const { data, error } = await sb.rpc('request_withdrawal', {
-                p_user_id: State.user.id,
-                p_amount: amount,
-                p_bank_name: bank,
-                p_beneficiary: beneficiary,
-                p_clabe: clabeVal
-            });
-            if (error) throw error;
-            if (!data.ok) throw new Error(data.error);
-
-            State.balance = data.balance;
-            UI.updateBalance();
-        }
-
-        UI.notify("Solicitud enviada", "success");
-        UI.closeModal('modal-deposit');
-    } catch(e) {
-        UI.notify(e.message, "error");
-    } finally {
-        btn.disabled = false; btn.innerText = "CONFIRMAR"; State.isProcessing = false;
-    }
-}
+            async confirmTransaction() { if(State.isProcessing) return; const amountInput = document.getElementById('dep-amount').value; const amount = Math.abs(parseFloat(amountInput)); const bank = document.getElementById('bank-name').value; const beneficiary = document.getElementById('beneficiary-name').value; if(!amount || amount <= 0 || !bank || !beneficiary) return UI.notify("Completa campos", "error"); const btn = document.getElementById('btn-confirm-dep'); btn.disabled = true; btn.innerText = "PROCESANDO..."; State.isProcessing = true; try { const isDeposit = State.currentTx === 'deposit'; let historyItem = { user_id: State.user.id, type: isDeposit ? 'deposits' : 'bets', amount: isDeposit ? amount : -amount, label: isDeposit ? 'DEPÓSITO PENDIENTE' : 'RETIRO PENDIENTE', status: 'pending' }; if(isDeposit) { const fileInput = document.getElementById('receipt-input'); const file = fileInput.files[0]; if(!file) throw new Error("Sube comprobante"); const fName = `${Date.now()}_${State.user.id}.jpg`; const uploadRes = await sb.storage.from('comprobantes').upload(fName, file); if(uploadRes.error) throw uploadRes.error; const pub = sb.storage.from('comprobantes').getPublicUrl(fName); historyItem.evidence_url = pub.data.publicUrl; historyItem.bank_name = bank; historyItem.account_holder = beneficiary; } else { const clabeVal = document.getElementById('clabe-input-field').value; if(!clabeVal || clabeVal.length !== 18) throw new Error("CLABE debe ser de 18 dígitos"); historyItem.bank_name = bank; historyItem.account_holder = `${beneficiary} | CLABE: ${clabeVal}`; if(State.balance < amount) throw new Error("Saldo insuficiente"); await this.updateBalanceDB(-amount); State.balance -= amount; UI.updateBalance(); } const { error } = await this.recordHistory(historyItem); if(error) throw error; UI.notify("Solicitud enviada", "success"); UI.closeModal('modal-deposit'); } catch(e) { UI.notify(e.message, "error"); } finally { btn.disabled = false; btn.innerText = "CONFIRMAR"; State.isProcessing = false; } },
             async fetchHistory() { const { data: b } = await sb.from('history').select('*, created_at').eq('user_id', State.user.id).eq('type', 'bets').order('created_at', { ascending: false }).limit(20); const { data: d } = await sb.from('history').select('*, created_at').eq('user_id', State.user.id).eq('type', 'deposits').order('created_at', { ascending: false }).limit(20); const container = document.getElementById('history-lists'); const realBets = (b || []).filter(item => !item.label.includes('RETIRO')); const realWithdrawals = (b || []).filter(item => item.label.includes('RETIRO')); container.innerHTML = `<div class="glass mb-4 p-4"><div class="flex justify-between items-center" onclick="UI.toggleAccordion('acc-bets')"><span class="font-casino text-[10px]">Jugadas</span><i class="fas fa-chevron-down" id="arrow-acc-bets"></i></div><div id="acc-bets" class="hidden-view mt-4 space-y-2 text-[10px] uppercase font-bold">${this.renderList(realBets, 'bets')}</div></div><div class="glass mb-4 p-4"><div class="flex justify-between items-center" onclick="UI.toggleAccordion('acc-deps')"><span class="font-casino text-[10px]">Depósitos</span><i class="fas fa-chevron-down" id="arrow-acc-deps"></i></div><div id="acc-deps" class="hidden-view mt-4 space-y-2 text-[10px] uppercase font-bold">${this.renderList(d || [], 'tx')}</div></div><div class="glass mb-4 p-4"><div class="flex justify-between items-center" onclick="UI.toggleAccordion('acc-wds')"><span class="font-casino text-[10px]">Retiros</span><i class="fas fa-chevron-down" id="arrow-acc-wds"></i></div><div id="acc-wds" class="hidden-view mt-4 space-y-2 text-[10px] uppercase font-bold">${this.renderList(realWithdrawals, 'tx')}</div></div>`; },
             renderList(items, type) { if(!items || items.length === 0) return '<p class="text-zinc-600">Sin registros</p>'; return items.map(i => { let statusColor = i.amount >= 0 ? 'text-emerald-500' : 'text-red-500'; let label = i.label; let horaExacta = ''; if (i.created_at) { const d = new Date(i.created_at); horaExacta = ` - ${d.toTimeString().split(' ')[0]}`; } if(type === 'tx' || label.includes('PENDIENTE')) { if(i.status === 'pending') label += " (⏳)"; else if(i.status === 'completed') label += " (✅)"; else if(i.status === 'rejected') label += " (❌)"; statusColor = 'text-white'; } return `<div class="flex justify-between border-b border-white/5 pb-1"><span>${label}${horaExacta}</span><span class="${statusColor}">$${Math.abs(i.amount).toFixed(2)}</span></div>`; }).join(''); }
         };
@@ -1321,53 +1254,10 @@
             },
 
             async placeBet() {
-    if (State.isProcessing) return;
-    const amt = parseFloat(document.getElementById('wc-bet-amount').value);
-    if (!amt || amt < 10) return UI.notify("Apuesta mínima $10 MXN", "error");
-    if (Object.keys(this.slip).length === 0) return UI.notify("Agrega al menos un partido", "error");
-
-    State.isProcessing = true;
-    try {
-        const totalOdd = this.getTotalOdd();
-        const potentialWin = amt * totalOdd;
-        const picks = Object.entries(this.slip).map(([id, s]) => ({
-            matchId: id, pick: s.pick, label: s.label, odd: s.odd,
-            matchHome: s.matchHome, matchAway: s.matchAway
-        }));
-
-        const usandoBono = !!(BonoMundial.bono && BonoMundial.bono.status === 'active');
-
-        const { data, error } = await sb.rpc('place_wc_bet', {
-            p_user_id: State.user.id,
-            p_amount: amt,
-            p_picks: picks,
-            p_total_odd: totalOdd,
-            p_potential_win: potentialWin,
-            p_use_bonus: usandoBono
-        });
-
-        if (error) throw error;
-        if (!data.ok) { UI.notify(data.error, "error"); return; }
-
-        State.balance = data.balance;
-        UI.updateBalance();
-
-        if (usandoBono) {
-            BonoMundial.bono = null;
-            BonoMundial.actualizarUI();
-        }
-
-        playSfx('win');
-        UI.notify(`✅ ¡Ticket apostado! Posible ganancia: $${potentialWin.toFixed(2)}`, "success");
-        document.getElementById('wc-bet-amount').value = '';
-        this.clearSlip();
-        this.setTab('mis');
-    } catch(e) {
-        UI.notify("Error al procesar apuesta: " + e.message, "error");
-    } finally {
-        State.isProcessing = false;
-    }
-}
+                if (State.isProcessing) return;
+                const amt = parseFloat(document.getElementById('wc-bet-amount').value);
+                if (!amt || amt < 10) return UI.notify("Apuesta mínima $10 MXN", "error");
+                if (Object.keys(this.slip).length === 0) return UI.notify("Agrega al menos un partido", "error");
 
                 // ── Validación del bono ──
                 const bono = BonoMundial.bono;
