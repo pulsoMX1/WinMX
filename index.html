@@ -671,13 +671,32 @@ a { color: inherit; }
 const SUPABASE_URL = "https://meiwuluwrdjszxeyoqtt.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1laXd1bHV3cmRqc3p4ZXlvcXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MDk4NzksImV4cCI6MjA5MzA4NTg3OX0.EZmyzacTi4L6_-pGJzwLGPCWF5aplmKY9SXBVl-2C8s";
 
-// Servidores STUN públicos de Google — suficientes para la mayoría
-// de conexiones. Un porcentaje de usuarios detrás de NAT/firewalls
-// restrictivos necesitará además un servidor TURN (no incluido en
-// este MVP) para poder conectar.
+// Servidores STUN públicos de Google para descubrir la IP pública.
+// Además se incluye un servidor TURN (Open Relay, gratuito) como
+// respaldo: STUN por sí solo falla en muchas combinaciones de redes
+// reales (NAT simétrico, redes corporativas, datos móviles vs wifi),
+// y sin TURN la señalización WebRTC se completa con éxito pero el
+// video/audio nunca llega a pasar — exactamente el síntoma de "se
+// conecta pero no se ve la cámara del otro". Para producción real se
+// recomienda un TURN propio (coturn, Twilio, etc.) con más capacidad.
 const ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
+  {
+    urls: "turn:openrelay.metered.ca:80",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443?transport=tcp",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
 ];
 
 const LOBBY_CHANNEL = "signal-lobby";
