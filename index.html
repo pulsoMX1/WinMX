@@ -1054,20 +1054,53 @@ async function getLocalStream() {
 // Matchmaking flow
 // ===================================================================
 async function startSearching() {
+
   resetCallUI();
   searchingSub.textContent = "Escaneando usuarios disponibles";
 
-  matchmaker = new Matchmaker();
+  // Crear un canal nuevo para este usuario
+  const lobbyChannel = supabase.channel(LOBBY_CHANNEL, {
+    config: {
+      presence: {
+        key: crypto.randomUUID()
+      }
+    }
+  });
 
-  matchmaker.onPresenceCount = (count) => {
-    statOnline.textContent = count;
-  };
+  // Esperar a que el canal esté listo
+  await new Promise((resolve, reject) => {
+
+    lobbyChannel.subscribe((status) => {
+
+      if (status === "SUBSCRIBED") {
+        resolve();
+      }
+
+      if (status === "CHANNEL_ERROR") {
+        reject(new Error("No se pudo conectar al lobby."));
+      }
+
+    });
+
+  });
+
+  matchmaker = new Matchmaker(lobbyChannel);
 
   matchmaker.onMatched = (roomId, isInitiator, peerId) => {
-    hudPeerId.textContent = `PEER #${peerId.slice(0, 6).toUpperCase()}`;
-    searchingSub.textContent = "Estableciendo conexión directa";
+
+    hudPeerId.textContent =
+      `PEER #${peerId.slice(0,6).toUpperCase()}`;
+
+    searchingSub.textContent =
+      "Estableciendo conexión directa";
+
     beginCall(roomId, isInitiator);
+
   };
+
+  await matchmaker.enterLobby();
+
+}
 
   await matchmaker.enterLobby();
 }
