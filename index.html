@@ -770,12 +770,12 @@ const NETCOINS_CONFIG = {
   //    pone una etiqueta destacada a ese paquete (usa solo uno).
   // -------------------------------------------------------------
   PACKAGES: [
-    { amount: 100,   label: "Inicial" },
-    { amount: 500,   label: "Básico" },
-    { amount: 1000,  label: "Estándar", popular: true },
-    { amount: 2500,  label: "Avanzado" },
-    { amount: 5000,  label: "Premium" },
-    { amount: 10000, label: "Élite" },
+    { amount: 100},
+    { amount: 500},
+    { amount: 1000},
+    { amount: 2500},
+    { amount: 5000},
+    { amount: 10000},
   ],
 };
 
@@ -1006,7 +1006,7 @@ const NETCOINS_CONFIG = {
 
       card.innerHTML = `
         ${pkg.popular ? '<span class="coin-badge">Más elegido</span>' : ""}
-        <div class="coin-hex">NC</div>
+        <div class="coin-hex">R</div>
         <div class="coin-amount">${formatNumber(pkg.amount)}</div>
         <div class="coin-label">${escapeHtml(pkg.label)}</div>
       `;
@@ -1032,8 +1032,8 @@ const NETCOINS_CONFIG = {
     els.confirmAvatar.src = state.avatar_url || "";
     els.confirmAvatar.alt = `Foto de perfil de ${state.username}`;
     els.confirmUsername.textContent = `@${state.username}`;
-    els.confirmAmount.textContent = `${formatNumber(state.paquete.amount)} Netcoins`;
-    els.confirmNewBalance.textContent = `${formatNumber(state.saldo_actual + state.paquete.amount)} Netcoins`;
+    els.confirmAmount.textContent = `${formatNumber(state.paquete.amount)} Robux`;
+    els.confirmNewBalance.textContent = `${formatNumber(state.saldo_actual + state.paquete.amount)} Robux`;
 
     els.confirmError.hidden = true;
     els.confirmBtn.disabled = false;
@@ -1074,7 +1074,7 @@ const NETCOINS_CONFIG = {
      ------------------------------------------------------------- */
   function goToSuccessScreen(data) {
     els.successUsername.textContent = `@${data.username || state.username}`;
-    els.successAmount.textContent = `${formatNumber(state.paquete.amount)} Netcoins entregadas · saldo total: ${formatNumber(data.saldo)}`;
+    els.successAmount.textContent = `${formatNumber(state.paquete.amount)} Robux enviados · saldo total: ${formatNumber(data.saldo)}`;
     showScreen("success");
   }
 
