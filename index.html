@@ -1,845 +1,1103 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Frecuencia — Sala de DJ compartida</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Netcoins — Envío de monedas</title>
+<meta name="description" content="Envía Netcoins a cualquier jugador de Roblox de forma rápida y segura." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
 <style>
-  /* ============================================================
-     FRECUENCIA — design tokens
-     bg-void:#0B0710  bg-panel:#15101F  bg-raised:#1D1629
-     neon-magenta:#FF2E88  neon-amber:#FFB627  line:#2A2138
-     text-primary:#F4EFFB  text-dim:#8A7FA0
-     display: 'Anton'  body: 'Space Grotesk'  mono: 'JetBrains Mono'
-     ============================================================ */
-  :root{
-    --bg-void:#0B0710; --bg-panel:#15101F; --bg-raised:#1D1629;
-    --magenta:#FF2E88; --amber:#FFB627; --line:#2A2138;
-    --text:#F4EFFB; --dim:#8A7FA0; --dim2:#564A6E;
-    --radius:14px;
-  }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  html,body{height:100%;}
-  body{
-    background:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,46,136,.18), transparent 60%),
-      radial-gradient(ellipse 700px 500px at 110% 10%, rgba(255,182,39,.10), transparent 55%),
-      var(--bg-void);
-    color:var(--text);
-    font-family:'Space Grotesk', sans-serif;
-    min-height:100vh;
-    overflow-x:hidden;
-  }
-  ::selection{background:var(--magenta); color:#fff;}
-  ::-webkit-scrollbar{width:8px;}
-  ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px;}
-  a{color:inherit;}
-  button{font-family:inherit; cursor:pointer; border:none;}
-  input{font-family:inherit;}
-  :focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+/* =====================================================================
+   NETCOINS — Sistema de diseño
+   -----------------------------------------------------------------------
+   Paleta: fondo casi-negro con acento violeta-magenta (energia/moneda
+   digital). Tipografia Space Grotesk para titulos + Inter para cuerpo.
+   Firma visual: las "fichas" de Netcoins son hexagonos apilados, no
+   tarjetas rectangulares genericas.
+   ===================================================================== */
 
-  .display{font-family:'Anton', sans-serif; letter-spacing:.5px; text-transform:uppercase;}
-  .mono{font-family:'JetBrains Mono', monospace;}
+:root {
+  --bg:            #0B0D10;
+  --surface:       #14171C;
+  --surface-2:     #1B1F26;
+  --border:        #262B33;
+  --border-soft:   #1E222A;
 
-  /* ---------- background texture: drifting frequency lines ---------- */
-  .freq-bg{position:fixed; inset:0; z-index:0; opacity:.5; pointer-events:none;}
-  .freq-bg svg{width:100%; height:100%;}
+  --text:          #F4F5F7;
+  --text-soft:     #9CA3AF;
+  --text-faint:    #5B6270;
 
-  /* ---------- shared layout shell ---------- */
-  #app{position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column;}
+  --accent:        #7C5CFF;
+  --accent-soft:   #9B82FF;
+  --accent-dim:    #2A2150;
+  --accent-text:   #C9BBFF;
 
-  .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:18px 28px; border-bottom:1px solid var(--line);
-    background:rgba(11,7,16,.6); backdrop-filter:blur(10px);
-    position:sticky; top:0; z-index:20;
-  }
-  .brand{display:flex; align-items:center; gap:10px;}
-  .brand .mark{
-    width:30px; height:30px; border-radius:50%;
-    background:conic-gradient(from 90deg, var(--magenta), var(--amber), var(--magenta));
-    position:relative; flex-shrink:0;
-    animation:spin 4s linear infinite paused;
-  }
-  .brand .mark::after{content:''; position:absolute; inset:38%; background:var(--bg-void); border-radius:50%;}
-  .brand .mark.live{animation-play-state:running;}
-  .brand h1{font-size:20px; letter-spacing:1px;}
-  .brand .tag{font-size:11px; color:var(--dim); letter-spacing:2px; text-transform:uppercase;}
-  @keyframes spin{to{transform:rotate(360deg);}}
+  --success:       #2ECC8F;
+  --success-dim:   #133327;
+  --danger:        #FF5C72;
+  --danger-dim:    #3A1620;
 
-  .room-pill{
-    display:flex; align-items:center; gap:10px;
-    background:var(--bg-panel); border:1px solid var(--line);
-    padding:6px 14px; border-radius:999px; font-size:13px; color:var(--dim);
-  }
-  .room-pill b{color:var(--text); font-family:'JetBrains Mono', monospace; letter-spacing:1px;}
-  .room-pill .dot{width:7px; height:7px; border-radius:50%; background:var(--amber); box-shadow:0 0 8px var(--amber);}
-  .leave-btn{background:transparent; color:var(--dim); border:1px solid var(--line); padding:6px 14px; border-radius:999px; font-size:13px; transition:.15s;}
-  .leave-btn:hover{border-color:var(--magenta); color:var(--text);}
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
 
-  /* ===================== LOBBY ===================== */
-  .lobby{
-    flex:1; display:flex; align-items:center; justify-content:center;
-    padding:40px 20px;
-  }
-  .lobby-card{
-    width:100%; max-width:440px;
-    background:linear-gradient(180deg, var(--bg-panel), var(--bg-raised));
-    border:1px solid var(--line); border-radius:20px;
-    padding:38px 34px; position:relative; overflow:hidden;
-  }
-  .lobby-card::before{
-    content:''; position:absolute; top:-60px; right:-60px; width:180px; height:180px;
-    background:radial-gradient(circle, rgba(255,46,136,.25), transparent 70%);
-  }
-  .lobby-eyebrow{font-size:12px; letter-spacing:3px; color:var(--amber); text-transform:uppercase; margin-bottom:10px;}
-  .lobby-card h2{font-size:32px; line-height:1.05; margin-bottom:10px;}
-  .lobby-card p.sub{color:var(--dim); font-size:14px; margin-bottom:26px; line-height:1.5;}
-  .field{margin-bottom:14px;}
-  .field label{display:block; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:7px;}
-  .field input{
-    width:100%; background:var(--bg-void); border:1px solid var(--line); color:var(--text);
-    padding:13px 14px; border-radius:10px; font-size:15px; transition:.15s;
-  }
-  .field input:focus{border-color:var(--magenta);}
-  .row-btns{display:flex; gap:10px; margin-top:22px;}
-  .btn{
-    flex:1; padding:13px 16px; border-radius:10px; font-weight:600; font-size:14px;
-    letter-spacing:.3px; transition:.15s; text-align:center;
-  }
-  .btn-primary{background:var(--magenta); color:#fff;}
-  .btn-primary:hover{background:#ff4d9b; transform:translateY(-1px);}
-  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--text);}
-  .btn-ghost:hover{border-color:var(--amber);}
-  .lobby-foot{margin-top:22px; font-size:12px; color:var(--dim2); text-align:center;}
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
 
-  .setup-warning{
-    background:rgba(255,182,39,.08); border:1px solid rgba(255,182,39,.35);
-    border-radius:12px; padding:16px 18px; font-size:13px; color:var(--amber);
-    line-height:1.6; max-width:520px; margin:0 auto;
-  }
-  .setup-warning code{background:rgba(0,0,0,.3); padding:1px 6px; border-radius:5px; font-family:'JetBrains Mono',monospace;}
+* { box-sizing: border-box; }
 
-  /* ===================== ROOM ===================== */
-  .room-wrap{
-    flex:1; display:grid; grid-template-columns:340px 1fr 320px;
-    gap:1px; background:var(--line);
-  }
-  .panel{background:var(--bg-void); padding:24px; overflow-y:auto;}
-  .panel-title{
-    font-size:12px; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim);
-    margin-bottom:18px; display:flex; align-items:center; gap:8px;
-  }
-  .panel-title::before{content:''; width:14px; height:1px; background:var(--magenta);}
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
 
-  /* now playing */
-  .vinyl-stage{
-    background:radial-gradient(circle at 50% 30%, rgba(255,46,136,.12), transparent 65%);
-    border:1px solid var(--line); border-radius:18px; padding:26px; text-align:center;
-    position:relative;
-  }
-  .vinyl{
-    width:170px; height:170px; margin:0 auto 18px; border-radius:50%; position:relative;
-    background:repeating-radial-gradient(circle, #1a1424 0 3px, #120d1a 3px 6px);
-    border:3px solid #261c33;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .vinyl.spin{animation:spin 3.2s linear infinite;}
-  .vinyl-label{
-    width:62px; height:62px; border-radius:50%; overflow:hidden;
-    background:linear-gradient(135deg, var(--magenta), var(--amber));
-    display:flex; align-items:center; justify-content:center; border:2px solid var(--bg-void);
-  }
-  .vinyl-label img{width:100%; height:100%; object-fit:cover;}
-  .np-title{font-size:16px; font-weight:700; margin-bottom:4px; line-height:1.3;}
-  .np-meta{font-size:12.5px; color:var(--dim);}
-  .np-empty{color:var(--dim2); font-size:13px; padding:30px 0;}
-  .progress-track{height:4px; background:var(--line); border-radius:4px; margin-top:18px; overflow:hidden;}
-  .progress-fill{height:100%; background:linear-gradient(90deg, var(--magenta), var(--amber)); width:0%; transition:width .3s linear;}
-  .player-box{
-    width:100%; aspect-ratio:16/9; margin-top:16px; border-radius:10px; overflow:hidden;
-    border:1px solid var(--line); background:#000;
-  }
-  .player-box iframe{width:100%; height:100%; display:block;}
-  .ad-note{
-    margin-top:10px; font-size:11.5px; line-height:1.5; color:var(--dim);
-    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; text-align:left;
-  }
-  .ublock-btn{
-    width:100%; margin-top:10px; padding:11px;
-    background:linear-gradient(135deg,rgba(255,182,39,.12),rgba(255,182,39,.06));
-    border:1px solid rgba(255,182,39,.4); color:var(--amber);
-    font-weight:600; font-size:13px; border-radius:10px; transition:.15s;
-  }
-  .ublock-btn:hover{background:rgba(255,182,39,.2); border-color:var(--amber);}
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+}
 
-  .stage-actions{display:flex; gap:8px; margin-top:18px;}
-  .icon-btn{
-    flex:1; background:var(--bg-panel); border:1px solid var(--line); color:var(--text);
-    padding:10px; border-radius:10px; font-size:13px; transition:.15s;
-  }
-  .icon-btn:hover{border-color:var(--amber); color:var(--amber);}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
 
-  .listeners{margin-top:24px;}
-  .listener-chip{
-    display:inline-flex; align-items:center; gap:6px; background:var(--bg-panel);
-    border:1px solid var(--line); padding:5px 11px; border-radius:999px; font-size:12px;
-    margin:0 6px 6px 0; color:var(--dim);
-  }
-  .listener-chip .pip{width:6px; height:6px; border-radius:50%; background:var(--amber);}
+/* ---------------------------------------------------------------
+   Fondo: reticula sutil + resplandor radial fijo, sin ruido visual
+   --------------------------------------------------------------- */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(124, 92, 255, 0.16), transparent 42%),
+    radial-gradient(circle at 85% 88%, rgba(124, 92, 255, 0.10), transparent 38%),
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: auto, auto, 56px 56px, 56px 56px;
+}
 
-  /* search + queue */
-  .search-box{display:flex; gap:8px; margin-bottom:18px;}
-  .search-box input{
-    flex:1; background:var(--bg-panel); border:1px solid var(--line); color:var(--text);
-    padding:12px 14px; border-radius:10px; font-size:14px;
-  }
-  .search-box input:focus{border-color:var(--magenta);}
-  .search-box button{background:var(--amber); color:#1a1208; padding:0 18px; border-radius:10px; font-weight:700; font-size:13px;}
+/* ---------------------------------------------------------------
+   Iconos: trazos SVG simples en linea, sin libreria externa
+   --------------------------------------------------------------- */
+[class^="icon-"] {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+.icon-user { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>"); }
+.icon-arrow-left { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'><path d='M19 12H5M11 18l-6-6 6-6'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'><path d='M19 12H5M11 18l-6-6 6-6'/></svg>"); }
+.icon-clock { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>"); }
+.icon-check { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4'><path d='M5 13l4.5 4.5L19 8'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4'><path d='M5 13l4.5 4.5L19 8'/></svg>"); }
 
-  .result-list, .queue-list{display:flex; flex-direction:column; gap:8px;}
-  .song-row{
-    display:flex; align-items:center; gap:12px; background:var(--bg-panel);
-    border:1px solid var(--line); border-radius:12px; padding:9px 12px; transition:.15s;
-  }
-  .song-row:hover{border-color:var(--dim2);}
-  .song-row img{width:46px; height:46px; border-radius:7px; object-fit:cover; flex-shrink:0; background:var(--bg-raised);}
-  .song-row .info{flex:1; min-width:0;}
-  .song-row .info .t{font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .song-row .info .c{font-size:11.5px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .add-btn{
-    background:transparent; border:1px solid var(--magenta); color:var(--magenta);
-    width:30px; height:30px; border-radius:8px; font-size:16px; flex-shrink:0; transition:.15s;
-  }
-  .add-btn:hover{background:var(--magenta); color:#fff;}
-  .queue-pos{
-    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--dim2);
-    width:20px; text-align:center; flex-shrink:0;
-  }
-  .empty-note{color:var(--dim2); font-size:13px; padding:14px 0;}
-  .section-gap{margin-top:28px;}
+/* ---------------------------------------------------------------
+   Header / progreso
+   --------------------------------------------------------------- */
+.topbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px clamp(20px, 5vw, 56px);
+  flex-wrap: wrap;
+  gap: 16px;
+}
 
-  /* chat */
-  .chat-panel{display:flex; flex-direction:column; height:100%;}
-  .chat-log{flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-bottom:14px;}
-  .msg{font-size:13.5px; line-height:1.45;}
-  .msg .who{font-weight:700; font-size:12px; margin-right:6px;}
-  .msg .who.me{color:var(--amber);}
-  .msg .who.them{color:var(--magenta);}
-  .msg .sys{color:var(--dim2); font-style:italic; font-size:12.5px;}
-  .chat-input{display:flex; gap:8px; border-top:1px solid var(--line); padding-top:14px;}
-  .chat-input input{
-    flex:1; background:var(--bg-panel); border:1px solid var(--line); color:var(--text);
-    padding:11px 13px; border-radius:10px; font-size:13.5px;
-  }
-  .chat-input input:focus{border-color:var(--magenta);}
-  .chat-input button{background:var(--magenta); color:#fff; padding:0 16px; border-radius:10px; font-weight:700;}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #0B0D10;
+  font-family: var(--font-display);
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+}
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.01em;
+}
 
-  .toast{
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--bg-raised); border:1px solid var(--line); padding:12px 20px; border-radius:10px;
-    font-size:13px; opacity:0; transition:.25s; z-index:100; pointer-events:none;
-  }
-  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.steps {
+  list-style: none;
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.step-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+.step.is-active { color: var(--text); }
+.step.is-active .step-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.step.is-done { color: var(--text-soft); }
+.step.is-done .step-dot { background: var(--success); }
 
-  @media (max-width:980px){
-    .room-wrap{grid-template-columns:1fr; grid-template-rows:auto auto auto;}
-    .panel{max-height:none;}
-  }
+/* ---------------------------------------------------------------
+   Stage / pantallas
+   --------------------------------------------------------------- */
+.stage {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px clamp(16px, 5vw, 56px) 64px;
+}
+
+.screen {
+  display: none;
+  width: 100%;
+  animation: rise 0.45s ease;
+}
+.screen.is-active { display: flex; justify-content: center; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.panel {
+  width: 100%;
+}
+.panel-narrow { max-width: 440px; }
+.panel-wide   { max-width: 760px; }
+.panel-center { text-align: center; display: flex; flex-direction: column; align-items: center; }
+
+.eyebrow {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  margin: 0 0 10px;
+}
+.eyebrow-success { color: var(--success); }
+
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.4vw, 32px);
+  line-height: 1.2;
+  font-weight: 600;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  color: var(--text-soft);
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0 0 32px;
+  max-width: 46ch;
+}
+
+/* ---------------------------------------------------------------
+   Pantalla 1 — avatar + formulario
+   --------------------------------------------------------------- */
+.avatar-frame {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 28px;
+}
+.avatar-placeholder, .avatar-img {
+  position: absolute;
+  inset: 0;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-indent: -9999px;
+}
+.avatar-placeholder { text-indent: 0; }
+.avatar-img[hidden] { display: none; }
+.avatar-img { display: block; }
+.avatar-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.avatar-frame.is-found .avatar-ring {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-dim);
+}
+
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.input-prefix {
+  padding-left: 16px;
+  color: var(--text-faint);
+  font-weight: 500;
+  font-size: 15px;
+}
+.text-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font-body);
+  padding: 14px 14px 14px 6px;
+}
+.text-input::placeholder { color: var(--text-faint); }
+
+.input-spinner {
+  width: 16px; height: 16px;
+  margin-right: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-soft);
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.player-name {
+  margin: 12px 2px 0;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.player-name strong { color: var(--text); font-weight: 500; }
+
+.field-error {
+  margin: 12px 2px 0;
+  font-size: 13.5px;
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------------------------------------------------------------
+   Botones
+   --------------------------------------------------------------- */
+.btn {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  padding: 14px 22px;
+  transition: transform 0.12s ease, opacity 0.18s ease, background 0.18s ease;
+}
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #0B0D10;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-soft); }
+
+.btn-block { width: 100%; margin-top: 26px; }
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+}
+.btn-back:hover { color: var(--text); }
+
+/* ---------------------------------------------------------------
+   Pantalla 2 — pildora de destinatario + grid de monedas
+   --------------------------------------------------------------- */
+.recipient-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 16px 6px 6px;
+  margin-bottom: 22px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+.recipient-pill-img {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  overflow: hidden;
+  text-indent: -9999px;
+  flex-shrink: 0;
+}
+
+.coin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.coin-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 26px 18px 22px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.18s ease, transform 0.12s ease, background 0.18s ease;
+}
+.coin-card:hover {
+  border-color: var(--border-soft);
+  background: var(--surface-2);
+  transform: translateY(-2px);
+}
+.coin-card:active { transform: translateY(0) scale(0.99); }
+.coin-card.is-popular { border-color: var(--accent); }
+
+.coin-badge {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #0B0D10;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* Ficha hexagonal: la firma visual de la marca */
+.coin-hex {
+  width: 56px;
+  height: 56px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(155deg, var(--accent-soft), var(--accent));
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  color: #0B0D10;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.coin-amount {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+}
+.coin-label {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: -10px;
+}
+
+/* ---------------------------------------------------------------
+   Pantalla 3 — recibo de confirmacion
+   --------------------------------------------------------------- */
+.receipt {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.receipt-recipient {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 18px;
+}
+.receipt-avatar {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  overflow: hidden;
+  text-indent: -9999px;
+  flex-shrink: 0;
+}
+.receipt-label { margin: 0; font-size: 12px; color: var(--text-faint); }
+.receipt-value { margin: 2px 0 0; font-size: 15.5px; font-weight: 500; }
+
+.receipt-rows { margin: 0; }
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 14px;
+  padding: 8px 0;
+}
+.receipt-row dt { color: var(--text-soft); margin: 0; }
+.receipt-row dd { margin: 0; font-weight: 500; }
+.receipt-row-total dd {
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--accent-text);
+}
+
+.notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+.notice .icon-clock {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent-text);
+}
+.notice strong { color: var(--text); font-weight: 600; }
+
+/* ---------------------------------------------------------------
+   Pantalla 4 — exito
+   --------------------------------------------------------------- */
+.success-icon {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: var(--success-dim);
+  color: var(--success);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  margin-bottom: 20px;
+}
+
+.success-username {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--accent-text);
+  margin: 0 0 6px;
+}
+.success-amount {
+  font-size: 15px;
+  color: var(--text-soft);
+  margin: 0 0 8px;
+}
+
+/* ---------------------------------------------------------------
+   Toast de error general
+   --------------------------------------------------------------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger);
+  color: #FFD7DC;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  z-index: 10;
+  max-width: 90vw;
+}
+
+/* ---------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .steps { gap: 16px; }
+  .step span:not(.step-dot) { display: none; }
+  .coin-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 </style>
 </head>
 <body>
 
-<div class="freq-bg"><svg id="freqSvg" preserveAspectRatio="none" viewBox="0 0 1200 300"></svg></div>
+<div class="bg-grid" aria-hidden="true"></div>
 
-<div id="app">
-
-  <!-- ============= LOBBY (room entry) ============= -->
-  <div id="lobbyView" class="lobby">
-    <div class="lobby-card">
-      <div class="lobby-eyebrow">Frecuencia · sala de DJ</div>
-      <h2 class="display">Una cola.<br>Un mismo beat.</h2>
-      <p class="sub">Entra a una sala, agrega canciones por nombre y escúchalas en vivo con quien más esté conectado — todos al mismo segundo.</p>
-
-      <div id="configWarning" style="display:none;" class="setup-warning">
-        ⚠️ Falta configuración. Abre <code>index.html</code> y rellena el objeto <code>CONFIG</code> al inicio del <code>&lt;script&gt;</code> con tu <code>SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code> y <code>YOUTUBE_API_KEY</code>. Instrucciones completas debajo del código.
-      </div>
-
-      <div id="lobbyForm">
-        <div class="field">
-          <label>Tu nombre</label>
-          <input id="nameInput" type="text" maxlength="20" placeholder="Cómo te van a ver en el chat">
-        </div>
-        <div class="field">
-          <label>Código de sala</label>
-          <input id="roomInput" type="text" maxlength="12" placeholder="ej. viernes-noche" autocomplete="off">
-        </div>
-        <div class="row-btns">
-          <button class="btn btn-ghost" id="newRoomBtn">Crear sala nueva</button>
-          <button class="btn btn-primary" id="joinRoomBtn">Entrar a la sala</button>
-        </div>
-        <div class="lobby-foot">Comparte el código con quien quieras invitar a la fiesta.</div>
-      </div>
-    </div>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">N</span>
+    <span class="brand-name">Netcoins</span>
   </div>
+  <ol class="steps" id="steps" aria-label="Progreso">
+    <li class="step is-active" data-step="1"><span class="step-dot"></span>Jugador</li>
+    <li class="step" data-step="2"><span class="step-dot"></span>Paquete</li>
+    <li class="step" data-step="3"><span class="step-dot"></span>Confirmar</li>
+  </ol>
+</header>
 
-  <!-- ============= ROOM (live) ============= -->
-  <div id="roomView" style="display:none; flex:1; flex-direction:column;">
-    <div class="topbar">
-      <div class="brand">
-        <div class="mark" id="brandMark"></div>
-        <div>
-          <h1 class="display">Frecuencia</h1>
-          <div class="tag">sala de dj compartida</div>
+<main class="stage">
+
+  <!-- ============================================================ -->
+  <!-- PANTALLA 1 — Buscar jugador                                  -->
+  <!-- ============================================================ -->
+  <section class="screen is-active" id="screen-player" aria-labelledby="player-heading">
+    <div class="panel panel-narrow">
+      <p class="eyebrow">Paso 1 de 3</p>
+      <h1 id="player-heading">¿A quién le mandamos Netcoins?</h1>
+      <p class="subtitle">Escribe el nombre de usuario de Roblox del jugador que va a recibir las monedas.</p>
+
+      <div class="avatar-frame" id="avatarFrame">
+        <div class="avatar-placeholder" id="avatarPlaceholder">
+          <i class="icon-user" aria-hidden="true"></i>
         </div>
+        <img id="avatarImg" class="avatar-img" alt="" hidden />
+        <div class="avatar-ring" aria-hidden="true"></div>
       </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div class="room-pill"><span class="dot"></span> sala <b id="roomCodeLabel"></b></div>
-        <button class="leave-btn" id="leaveBtn">Salir</button>
-      </div>
+
+      <form id="playerForm" class="player-form" novalidate>
+        <label for="username" class="field-label">Usuario de Roblox</label>
+        <div class="input-wrap">
+          <span class="input-prefix">@</span>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            class="text-input"
+            placeholder="nombre_de_usuario"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+          <span class="input-spinner" id="inputSpinner" hidden></span>
+        </div>
+
+        <p class="player-name" id="playerName" hidden></p>
+        <p class="field-error" id="fieldError" role="alert" hidden></p>
+
+        <button type="submit" class="btn btn-primary btn-block" id="continueBtn" disabled>
+          Continuar
+        </button>
+      </form>
     </div>
+  </section>
 
-    <div class="room-wrap">
+  <!-- ============================================================ -->
+  <!-- PANTALLA 2 — Elegir paquete                                  -->
+  <!-- ============================================================ -->
+  <section class="screen" id="screen-package" aria-labelledby="package-heading">
+    <div class="panel panel-wide">
+      <button type="button" class="btn-back" id="backToPlayer" aria-label="Volver al paso anterior">
+        <i class="icon-arrow-left" aria-hidden="true"></i> Cambiar jugador
+      </button>
 
-      <!-- now playing -->
-      <div class="panel">
-        <div class="panel-title">Sonando ahora</div>
-        <div class="vinyl-stage">
-          <div class="vinyl" id="vinyl">
-            <div class="vinyl-label" id="vinylLabel"></div>
-          </div>
-          <div id="npInfo">
-            <div class="np-empty">Nada en el aire todavía.<br>Agrega la primera canción →</div>
-          </div>
-          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-          <div class="player-box" id="ytmount"></div>
-          <div class="ad-note">
-            📺 Este reproductor es de YouTube y puede mostrar un anuncio antes de la canción.
-            Si aparece, usa el botón <b>«Saltar anuncio»</b> que YouTube muestra dentro del recuadro de arriba
-            (normalmente se activa a los 5 segundos, y solo si ese anuncio es de los que se pueden saltar).
-          </div>
-          <button class="icon-btn ublock-btn" id="ublockBtn" onclick="openUblock()">
-            🛡️ Instalar bloqueador de anuncios
-          </button>
-          <div class="stage-actions">
-            <button class="icon-btn" id="muteBtn">🔇 Activar audio</button>
-          </div>
-        </div>
-
-        <div class="listeners">
-          <div class="panel-title" style="margin-top:24px;">En la sala</div>
-          <div id="listenerChips"></div>
-        </div>
+      <div class="recipient-pill" id="recipientPill">
+        <img id="recipientAvatar" class="recipient-pill-img" alt="" />
+        <span id="recipientName"></span>
       </div>
 
-      <!-- search + queue -->
-      <div class="panel">
-        <div class="panel-title">Buscar canción</div>
-        <div class="search-box">
-          <input id="searchInput" type="text" placeholder="Nombre de la canción o artista…">
-          <button id="searchBtn">Buscar</button>
-        </div>
-        <div id="searchResults" class="result-list"></div>
+      <p class="eyebrow">Paso 2 de 3</p>
+      <h1 id="package-heading">Elige cuántas Netcoins enviar</h1>
+      <p class="subtitle">Selecciona uno de los paquetes disponibles. El saldo se entrega de forma manual.</p>
 
-        <div class="section-gap">
-          <div class="panel-title">Siguiente en la cola</div>
-          <div id="queueList" class="queue-list"></div>
-        </div>
-      </div>
-
-      <!-- chat -->
-      <div class="panel chat-panel">
-        <div class="panel-title">Chat en vivo</div>
-        <div class="chat-log" id="chatLog"></div>
-        <div class="chat-input">
-          <input id="chatInput" type="text" maxlength="280" placeholder="Escribe algo…">
-          <button id="chatSendBtn">Enviar</button>
-        </div>
-      </div>
-
+      <div class="coin-grid" id="coinGrid" role="list"></div>
     </div>
-  </div>
+  </section>
 
-</div>
+  <!-- ============================================================ -->
+  <!-- PANTALLA 3 — Confirmar                                       -->
+  <!-- ============================================================ -->
+  <section class="screen" id="screen-confirm" aria-labelledby="confirm-heading">
+    <div class="panel panel-narrow">
+      <button type="button" class="btn-back" id="backToPackage" aria-label="Volver al paso anterior">
+        <i class="icon-arrow-left" aria-hidden="true"></i> Cambiar paquete
+      </button>
 
-<div class="toast" id="toast"></div>
+      <p class="eyebrow">Paso 3 de 3</p>
+      <h1 id="confirm-heading">Confirma la transacción</h1>
 
-<script src="https://www.youtube.com/iframe_api"></script>
+      <div class="receipt" id="receipt">
+        <div class="receipt-recipient">
+          <img id="confirmAvatar" class="receipt-avatar" alt="" />
+          <div>
+            <p class="receipt-label">Jugador</p>
+            <p class="receipt-value" id="confirmUsername"></p>
+          </div>
+        </div>
+
+        <dl class="receipt-rows">
+          <div class="receipt-row">
+            <dt>Cantidad</dt>
+            <dd id="confirmAmount"></dd>
+          </div>
+          <div class="receipt-row receipt-row-total">
+            <dt>Saldo después del envío</dt>
+            <dd id="confirmNewBalance"></dd>
+          </div>
+        </dl>
+
+        <div class="notice">
+          <i class="icon-clock" aria-hidden="true"></i>
+          <p>Las Netcoins llegan a la cuenta del jugador en un plazo de <strong>24 a 48 horas hábiles</strong>.</p>
+        </div>
+      </div>
+
+      <p class="field-error" id="confirmError" role="alert" hidden></p>
+
+      <button type="button" class="btn btn-primary btn-block" id="confirmBtn">
+        Confirmar transacción
+      </button>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- PANTALLA 4 — Éxito                                           -->
+  <!-- ============================================================ -->
+  <section class="screen" id="screen-success" aria-labelledby="success-heading">
+    <div class="panel panel-narrow panel-center">
+      <div class="success-icon" aria-hidden="true">
+        <i class="icon-check"></i>
+      </div>
+      <p class="eyebrow eyebrow-success">Transacción completada</p>
+      <h1 id="success-heading">Netcoins enviados exitosamente a:</h1>
+      <p class="success-username" id="successUsername"></p>
+      <p class="success-amount" id="successAmount"></p>
+
+      <button type="button" class="btn btn-primary btn-block" id="restartBtn">
+        Regresar al principio
+      </button>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
 <script>
-/* ================================================================
-   CONFIG — rellena esto antes de publicar el sitio
-   ================================================================
-   SUPABASE_URL / SUPABASE_ANON_KEY:
-     Project Settings → API, en tu proyecto de supabase.com (gratis).
-     Corre el SQL de configuración (al final de este archivo, en
-     comentarios) en el SQL Editor de Supabase antes de usar la app.
+/* =====================================================================
+   CONFIGURACION — busca este bloque y edita solo estos valores.
+   Todo el HTML, CSS y JS de la pagina vive en este unico archivo.
+   ===================================================================== */
 
-   YOUTUBE_API_KEY:
-     console.cloud.google.com → crea un proyecto → habilita
-     "YouTube Data API v3" → Credentials → Create API key (gratis,
-     10,000 unidades/día). Esta key viaja en el navegador del
-     usuario: cualquiera que inspeccione el código puede verla y
-     usarla en otra app. Para una sala chica/personal el riesgo es
-     bajo, pero si esto crece, mueve la búsqueda a un backend propio.
-   ================================================================ */
-const CONFIG = {
-  SUPABASE_URL: "https://meiwuluwrdjszxeyoqtt.supabase.co",        // ej: "https://abcxyz.supabase.co"
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1laXd1bHV3cmRqc3p4ZXlvcXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MDk4NzksImV4cCI6MjA5MzA4NTg3OX0.EZmyzacTi4L6_-pGJzwLGPCWF5aplmKY9SXBVl-2C8s",   // tu anon/public key
-  YOUTUBE_API_KEY: "AIzaSyAMXE1I_BS99_HhmTAeLmIlqvHEaFrQTU0"      // tu API key de YouTube Data API v3
+const NETCOINS_CONFIG = {
+
+  // -------------------------------------------------------------
+  // 1) Datos de tu proyecto de Supabase
+  //    Los encuentras en: Supabase > tu proyecto > Settings > API
+  // -------------------------------------------------------------
+  SUPABASE_URL: "https://TU-PROYECTO.supabase.co",
+  SUPABASE_ANON_KEY: "TU_ANON_KEY_AQUI",
+
+  // URL de tu Edge Function (ver instrucciones de instalacion).
+  // Normalmente es: https://TU-PROYECTO.supabase.co/functions/v1/roblox-user
+  FUNCTION_URL: "https://TU-PROYECTO.supabase.co/functions/v1/roblox-user",
+
+  // -------------------------------------------------------------
+  // 2) Paquetes de Netcoins disponibles
+  //    Agrega, quita o edita los que quieras. "popular: true" le
+  //    pone una etiqueta destacada a ese paquete (usa solo uno).
+  // -------------------------------------------------------------
+  PACKAGES: [
+    { amount: 100,   label: "Inicial" },
+    { amount: 500,   label: "Básico" },
+    { amount: 1000,  label: "Estándar", popular: true },
+    { amount: 2500,  label: "Avanzado" },
+    { amount: 5000,  label: "Premium" },
+    { amount: 10000, label: "Élite" },
+  ],
 };
 
-// ---------------------------------------------------------------
-// estado global
-// ---------------------------------------------------------------
-let supa = null;
-let myId = crypto.randomUUID();
-let myName = "";
-let roomId = "";
-let presenceChannel = null;
-let presentIds = [];
-let ytPlayer = null;
-let ytReady = false;
-let progressTimer = null;
-let currentNowPlaying = null; // {video_id,title,thumbnail,started_at}
-let muted = true;
 
-// ---------------------------------------------------------------
-// arranque
-// ---------------------------------------------------------------
-function showConfigWarningIfNeeded(){
-  const missing = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY || !CONFIG.YOUTUBE_API_KEY;
-  document.getElementById('configWarning').style.display = missing ? 'block' : 'none';
-  return missing;
-}
+/* =====================================================================
+   NETCOINS — Logica de la aplicacion
+   -----------------------------------------------------------------------
+   Maneja las 4 pantallas (jugador, paquete, confirmar, exito), llama a
+   la Edge Function de Supabase para buscar al jugador de Roblox y para
+   entregar las Netcoins, y guarda el estado de la transaccion actual.
+   ===================================================================== */
 
-function initSupabase(){
-  if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) return;
-  supa = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-}
+(() => {
+  "use strict";
 
-function toast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2400);
-}
+  /* -------------------------------------------------------------
+     Estado de la transaccion en curso
+     ------------------------------------------------------------- */
+  const state = {
+    roblox_id: null,
+    username: null,
+    avatar_url: null,
+    saldo_actual: 0,
+    paquete: null, // { amount, label }
+  };
 
-function randomRoomCode(){
-  const words = ["neon","beat","vinilo","eco","loop","onda","disco","bajo","sintetico","ritmo"];
-  return words[Math.floor(Math.random()*words.length)] + "-" + Math.floor(1000+Math.random()*9000);
-}
+  /* -------------------------------------------------------------
+     Referencias al DOM
+     ------------------------------------------------------------- */
+  const els = {
+    steps: document.querySelectorAll(".step"),
 
-document.getElementById('newRoomBtn').addEventListener('click', ()=>{
-  document.getElementById('roomInput').value = randomRoomCode();
-});
+    // pantalla 1
+    playerForm: document.getElementById("playerForm"),
+    usernameInput: document.getElementById("username"),
+    continueBtn: document.getElementById("continueBtn"),
+    inputSpinner: document.getElementById("inputSpinner"),
+    avatarFrame: document.getElementById("avatarFrame"),
+    avatarImg: document.getElementById("avatarImg"),
+    avatarPlaceholder: document.getElementById("avatarPlaceholder"),
+    playerName: document.getElementById("playerName"),
+    fieldError: document.getElementById("fieldError"),
 
-document.getElementById('joinRoomBtn').addEventListener('click', enterRoom);
-document.getElementById('roomInput').addEventListener('keydown', e=>{ if(e.key==='Enter') enterRoom(); });
+    // pantalla 2
+    backToPlayer: document.getElementById("backToPlayer"),
+    recipientPill: document.getElementById("recipientPill"),
+    recipientAvatar: document.getElementById("recipientAvatar"),
+    recipientName: document.getElementById("recipientName"),
+    coinGrid: document.getElementById("coinGrid"),
 
-async function enterRoom(){
-  if (showConfigWarningIfNeeded()){
-    toast("Falta configurar Supabase / YouTube en el archivo");
-    return;
+    // pantalla 3
+    backToPackage: document.getElementById("backToPackage"),
+    confirmAvatar: document.getElementById("confirmAvatar"),
+    confirmUsername: document.getElementById("confirmUsername"),
+    confirmAmount: document.getElementById("confirmAmount"),
+    confirmNewBalance: document.getElementById("confirmNewBalance"),
+    confirmBtn: document.getElementById("confirmBtn"),
+    confirmError: document.getElementById("confirmError"),
+
+    // pantalla 4
+    successUsername: document.getElementById("successUsername"),
+    successAmount: document.getElementById("successAmount"),
+    restartBtn: document.getElementById("restartBtn"),
+
+    toast: document.getElementById("toast"),
+  };
+
+  const screens = {
+    player: document.getElementById("screen-player"),
+    package: document.getElementById("screen-package"),
+    confirm: document.getElementById("screen-confirm"),
+    success: document.getElementById("screen-success"),
+  };
+
+  /* -------------------------------------------------------------
+     Utilidades
+     ------------------------------------------------------------- */
+  function formatNumber(n) {
+    return new Intl.NumberFormat("es-MX").format(n);
   }
-  const name = document.getElementById('nameInput').value.trim();
-  const code = document.getElementById('roomInput').value.trim().toLowerCase().replace(/\s+/g,'-');
-  if (!name) { toast("Escribe tu nombre"); return; }
-  if (!code) { toast("Escribe o genera un código de sala"); return; }
 
-  myName = name;
-  roomId = code;
+  function showScreen(name) {
+    Object.values(screens).forEach((s) => s.classList.remove("is-active"));
+    screens[name].classList.add("is-active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
-  // crea la sala si no existe (idempotente)
-  await supa.from('rooms').upsert({ id: roomId, name: roomId }, { onConflict: 'id' });
-
-  document.getElementById('lobbyView').style.display = 'none';
-  document.getElementById('roomView').style.display = 'flex';
-  document.getElementById('roomCodeLabel').textContent = roomId;
-
-  await loadQueue();
-  await loadNowPlaying();
-  await loadChat();
-  subscribeRealtime();
-  joinPresence();
-}
-
-document.getElementById('leaveBtn').addEventListener('click', ()=> location.reload());
-
-// ---------------------------------------------------------------
-// YouTube: búsqueda por nombre
-// ---------------------------------------------------------------
-document.getElementById('searchBtn').addEventListener('click', runSearch);
-document.getElementById('searchInput').addEventListener('keydown', e=>{ if(e.key==='Enter') runSearch(); });
-
-async function runSearch(){
-  const q = document.getElementById('searchInput').value.trim();
-  if (!q) return;
-  const box = document.getElementById('searchResults');
-  box.innerHTML = `<div class="empty-note">Buscando…</div>`;
-  try{
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=6&q=${encodeURIComponent(q)}&key=${CONFIG.YOUTUBE_API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (!data.items || !data.items.length){
-      box.innerHTML = `<div class="empty-note">Sin resultados. Intenta con otro término.</div>`;
-      return;
-    }
-    box.innerHTML = '';
-    data.items.forEach(item=>{
-      const vid = item.id.videoId;
-      const sn = item.snippet;
-      const row = document.createElement('div');
-      row.className = 'song-row';
-      row.innerHTML = `
-        <img src="${sn.thumbnails.default.url}" alt="">
-        <div class="info">
-          <div class="t">${escapeHtml(sn.title)}</div>
-          <div class="c">${escapeHtml(sn.channelTitle)}</div>
-        </div>
-        <button class="add-btn" title="Agregar a la cola">+</button>`;
-      row.querySelector('.add-btn').addEventListener('click', ()=> addToQueue({
-        video_id: vid, title: sn.title, thumbnail: sn.thumbnails.medium.url, channel: sn.channelTitle
-      }));
-      box.appendChild(row);
+  function setStep(stepNumber) {
+    els.steps.forEach((step) => {
+      const n = Number(step.dataset.step);
+      step.classList.toggle("is-active", n === stepNumber);
+      step.classList.toggle("is-done", n < stepNumber);
     });
-  }catch(err){
-    console.error(err);
-    box.innerHTML = `<div class="empty-note">Error buscando. Revisa tu YOUTUBE_API_KEY.</div>`;
   }
-}
 
-function escapeHtml(s){
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-// ---------------------------------------------------------------
-// cola (queue)
-// ---------------------------------------------------------------
-async function addToQueue(song){
-  const { data: existing } = await supa.from('queue').select('position').eq('room_id', roomId).order('position', { ascending:false }).limit(1);
-  const nextPos = existing && existing.length ? existing[0].position + 1 : 1;
-  const { error } = await supa.from('queue').insert({
-    room_id: roomId, video_id: song.video_id, title: song.title,
-    thumbnail: song.thumbnail, channel: song.channel, added_by: myName, position: nextPos
-  });
-  if (error){ console.error(error); toast("No se pudo agregar (revisa la consola)"); return; }
-  toast(`Agregada: ${song.title}`);
-}
-
-async function loadQueue(){
-  const { data } = await supa.from('queue').select('*').eq('room_id', roomId).order('position', { ascending:true });
-  renderQueue(data || []);
-}
-
-function renderQueue(items){
-  const box = document.getElementById('queueList');
-  if (!items.length){ box.innerHTML = `<div class="empty-note">La cola está vacía. ¡Busca algo arriba!</div>`; return; }
-  box.innerHTML = '';
-  items.forEach((it, i)=>{
-    const row = document.createElement('div');
-    row.className = 'song-row';
-    row.innerHTML = `
-      <div class="queue-pos">${i+1}</div>
-      <img src="${it.thumbnail}" alt="">
-      <div class="info">
-        <div class="t">${escapeHtml(it.title)}</div>
-        <div class="c">agregó ${escapeHtml(it.added_by||'alguien')}</div>
-      </div>`;
-    box.appendChild(row);
-  });
-}
-
-// ---------------------------------------------------------------
-// now playing + reproducción sincronizada
-// ---------------------------------------------------------------
-async function loadNowPlaying(){
-  const { data } = await supa.from('now_playing').select('*').eq('room_id', roomId).maybeSingle();
-  if (data) applyNowPlaying(data);
-}
-
-function applyNowPlaying(row){
-  currentNowPlaying = row;
-  renderNowPlayingInfo(row);
-  if (ytReady) syncPlayerTo(row);
-}
-
-function renderNowPlayingInfo(row){
-  const info = document.getElementById('npInfo');
-  const vinyl = document.getElementById('vinyl');
-  const label = document.getElementById('vinylLabel');
-  if (!row){
-    info.innerHTML = `<div class="np-empty">Nada en el aire todavía.<br>Agrega la primera canción →</div>`;
-    vinyl.classList.remove('spin');
-    label.innerHTML = '';
-    document.getElementById('brandMark').classList.remove('live');
-    return;
+  function showToast(message) {
+    els.toast.textContent = message;
+    els.toast.hidden = false;
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { els.toast.hidden = true; }, 4500);
   }
-  info.innerHTML = `
-    <div class="np-title">${escapeHtml(row.title)}</div>
-    <div class="np-meta">${escapeHtml(row.channel||'')}</div>`;
-  label.innerHTML = `<img src="${row.thumbnail}" alt="">`;
-  vinyl.classList.add('spin');
-  document.getElementById('brandMark').classList.add('live');
-}
 
-function syncPlayerTo(row){
-  if (!row){ ytPlayer.stopVideo(); return; }
-  const elapsed = (Date.now() - new Date(row.started_at).getTime()) / 1000;
-  ytPlayer.loadVideoById(row.video_id, Math.max(0, elapsed));
-  if (!muted) ytPlayer.unMute();
-}
-
-// elección determinista del líder: el id más bajo presente
-function isLeader(){
-  if (!presentIds.length) return true;
-  const sorted = [...presentIds].sort();
-  return sorted[0] === myId;
-}
-
-async function advanceQueue(){
-  const { data: next } = await supa.from('queue').select('*').eq('room_id', roomId).order('position', { ascending:true }).limit(1);
-  if (!next || !next.length){
-    await supa.from('now_playing').delete().eq('room_id', roomId);
-    return;
+  function showFieldError(message) {
+    els.fieldError.textContent = message;
+    els.fieldError.hidden = false;
   }
-  const song = next[0];
-  await supa.from('now_playing').upsert({
-    room_id: roomId, video_id: song.video_id, title: song.title,
-    thumbnail: song.thumbnail, channel: song.channel, started_at: new Date().toISOString()
-  }, { onConflict: 'room_id' });
-  await supa.from('queue').delete().eq('id', song.id);
-}
 
-document.getElementById('muteBtn').addEventListener('click', ()=>{
-  muted = !muted;
-  const btn = document.getElementById('muteBtn');
-  if (!ytPlayer){ btn.textContent = muted ? '🔇 Activar audio' : '🔊 Audio activo'; return; }
-  if (muted){ ytPlayer.mute(); btn.textContent = '🔇 Activar audio'; }
-  else { ytPlayer.unMute(); ytPlayer.playVideo(); btn.textContent = '🔊 Audio activo'; }
-});
-
-// líder: revisa periódicamente si hay que arrancar/avanzar la cola
-setInterval(async ()=>{
-  if (!roomId || !supa) return;
-  if (!isLeader()) return;
-  if (!currentNowPlaying){
-    const { data } = await supa.from('queue').select('*').eq('room_id', roomId).order('position', { ascending:true }).limit(1);
-    if (data && data.length) await advanceQueue();
+  function clearFieldError() {
+    els.fieldError.hidden = true;
+    els.fieldError.textContent = "";
   }
-}, 4000);
 
-// ---------------------------------------------------------------
-// YouTube IFrame Player
-// ---------------------------------------------------------------
-function onYouTubeIframeAPIReady(){
-  ytPlayer = new YT.Player('ytmount', {
-    height: '100%', width: '100%',
-    playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
-    events: {
-      onReady: ()=>{
-        ytReady = true;
-        ytPlayer.mute();
-        if (currentNowPlaying) syncPlayerTo(currentNowPlaying);
+  async function callFunction(payload) {
+    const res = await fetch(NETCOINS_CONFIG.FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${NETCOINS_CONFIG.SUPABASE_ANON_KEY}`,
+        apikey: NETCOINS_CONFIG.SUPABASE_ANON_KEY,
       },
-      onStateChange: (e)=>{
-        if (e.data === YT.PlayerState.ENDED && isLeader()) advanceQueue();
-      }
-    }
-  });
-}
-
-setInterval(()=>{
-  if (!ytReady || !currentNowPlaying) return;
-  const dur = ytPlayer.getDuration();
-  const cur = ytPlayer.getCurrentTime();
-  if (dur > 0){
-    document.getElementById('progressFill').style.width = Math.min(100, (cur/dur)*100) + '%';
-  }
-}, 700);
-
-// ---------------------------------------------------------------
-// presencia (quién está en la sala) + elección de líder
-// ---------------------------------------------------------------
-function joinPresence(){
-  presenceChannel = supa.channel(`presence-${roomId}`, { config: { presence: { key: myId } } });
-  presenceChannel
-    .on('presence', { event: 'sync' }, ()=>{
-      const state = presenceChannel.presenceState();
-      presentIds = Object.keys(state);
-      renderListeners(state);
-    })
-    .subscribe(async (status)=>{
-      if (status === 'SUBSCRIBED'){
-        await presenceChannel.track({ name: myName, online_at: new Date().toISOString() });
-      }
+      body: JSON.stringify(payload),
     });
-}
 
-function renderListeners(state){
-  const box = document.getElementById('listenerChips');
-  box.innerHTML = '';
-  Object.values(state).forEach(arr=>{
-    const p = arr[0];
-    const chip = document.createElement('span');
-    chip.className = 'listener-chip';
-    chip.innerHTML = `<span class="pip"></span>${escapeHtml(p.name||'alguien')}`;
-    box.appendChild(chip);
-  });
-}
+    const data = await res.json().catch(() => ({}));
 
-// ---------------------------------------------------------------
-// chat
-// ---------------------------------------------------------------
-async function loadChat(){
-  const { data } = await supa.from('messages').select('*').eq('room_id', roomId).order('created_at', { ascending:true }).limit(100);
-  const log = document.getElementById('chatLog');
-  log.innerHTML = '';
-  (data||[]).forEach(renderMessage);
-  log.scrollTop = log.scrollHeight;
-}
-
-function renderMessage(m){
-  const log = document.getElementById('chatLog');
-  const div = document.createElement('div');
-  div.className = 'msg';
-  if (m.system){
-    div.innerHTML = `<span class="sys">${escapeHtml(m.content)}</span>`;
-  } else {
-    const mine = m.username === myName;
-    div.innerHTML = `<span class="who ${mine?'me':'them'}">${escapeHtml(m.username)}</span>${escapeHtml(m.content)}`;
-  }
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-}
-
-document.getElementById('chatSendBtn').addEventListener('click', sendChat);
-document.getElementById('chatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendChat(); });
-
-async function sendChat(){
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  await supa.from('messages').insert({ room_id: roomId, username: myName, content: text });
-}
-
-// ---------------------------------------------------------------
-// realtime: queue, now_playing, messages
-// ---------------------------------------------------------------
-function subscribeRealtime(){
-  supa.channel(`room-data-${roomId}`)
-    .on('postgres_changes', { event:'*', schema:'public', table:'queue', filter:`room_id=eq.${roomId}` }, loadQueue)
-    .on('postgres_changes', { event:'*', schema:'public', table:'now_playing', filter:`room_id=eq.${roomId}` }, (payload)=>{
-      if (payload.eventType === 'DELETE') applyNowPlaying(null);
-      else applyNowPlaying(payload.new);
-    })
-    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages', filter:`room_id=eq.${roomId}` }, (payload)=> renderMessage(payload.new))
-    .subscribe();
-}
-
-// ---------------------------------------------------------------
-// fondo decorativo: líneas de frecuencia
-// ---------------------------------------------------------------
-(function drawFreqBg(){
-  const svg = document.getElementById('freqSvg');
-  const ns = 'http://www.w3.org/2000/svg';
-  for (let i=0;i<3;i++){
-    const path = document.createElementNS(ns,'path');
-    let d = `M0 ${150+i*20}`;
-    for (let x=0;x<=1200;x+=40){
-      const y = 150 + i*20 + Math.sin((x/80)+i)* (18+i*6);
-      d += ` L${x} ${y}`;
+    if (!res.ok) {
+      throw new Error(data.error || "Ocurrió un error inesperado.");
     }
-    path.setAttribute('d', d);
-    path.setAttribute('fill','none');
-    path.setAttribute('stroke', i===1 ? '#FF2E88' : '#FFB627');
-    path.setAttribute('stroke-width','1');
-    path.setAttribute('opacity', 0.12 - i*0.02);
-    svg.appendChild(path);
+    return data;
   }
+
+  /* -------------------------------------------------------------
+     Pantalla 1 — Buscar jugador (con debounce mientras escribe)
+     ------------------------------------------------------------- */
+  let debounceTimer = null;
+  let searchToken = 0; // evita que una respuesta vieja pise a una nueva
+
+  els.usernameInput.addEventListener("input", () => {
+    const value = els.usernameInput.value.trim();
+    clearFieldError();
+    resetPlayerPreview();
+    els.continueBtn.disabled = true;
+
+    clearTimeout(debounceTimer);
+    if (value.length < 3) return;
+
+    debounceTimer = setTimeout(() => lookupPlayer(value), 550);
+  });
+
+  function resetPlayerPreview() {
+    els.avatarImg.hidden = true;
+    els.avatarPlaceholder.hidden = false;
+    els.avatarFrame.classList.remove("is-found");
+    els.playerName.hidden = true;
+    state.roblox_id = null;
+    state.username = null;
+    state.avatar_url = null;
+  }
+
+  async function lookupPlayer(username) {
+    const myToken = ++searchToken;
+    els.inputSpinner.hidden = false;
+
+    try {
+      const data = await callFunction({ action: "lookup", username });
+      if (myToken !== searchToken) return; // llego tarde, ignorar
+
+      state.roblox_id = data.roblox_id;
+      state.username = data.username;
+      state.avatar_url = data.avatar_url;
+      state.saldo_actual = Number(data.saldo) || 0;
+
+      if (data.avatar_url) {
+        els.avatarImg.src = data.avatar_url;
+        els.avatarImg.alt = `Foto de perfil de ${data.username} en Roblox`;
+        els.avatarImg.hidden = false;
+        els.avatarPlaceholder.hidden = true;
+      }
+      els.avatarFrame.classList.add("is-found");
+
+      els.playerName.innerHTML = `Jugador encontrado: <strong>${escapeHtml(data.display_name || data.username)}</strong> (@${escapeHtml(data.username)})`;
+      els.playerName.hidden = false;
+
+      els.continueBtn.disabled = false;
+    } catch (err) {
+      if (myToken !== searchToken) return;
+      showFieldError(err.message);
+      els.continueBtn.disabled = true;
+    } finally {
+      if (myToken === searchToken) els.inputSpinner.hidden = true;
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  els.playerForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!state.roblox_id) return;
+    goToPackageScreen();
+  });
+
+  /* -------------------------------------------------------------
+     Pantalla 2 — Elegir paquete
+     ------------------------------------------------------------- */
+  function goToPackageScreen() {
+    els.recipientAvatar.src = state.avatar_url || "";
+    els.recipientAvatar.alt = `Foto de perfil de ${state.username}`;
+    els.recipientName.textContent = `@${state.username}`;
+
+    renderCoinGrid();
+    setStep(2);
+    showScreen("package");
+  }
+
+  function renderCoinGrid() {
+    els.coinGrid.innerHTML = "";
+
+    NETCOINS_CONFIG.PACKAGES.forEach((pkg) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "coin-card" + (pkg.popular ? " is-popular" : "");
+      card.setAttribute("role", "listitem");
+      card.setAttribute("aria-label", `${formatNumber(pkg.amount)} Netcoins, paquete ${pkg.label}`);
+
+      card.innerHTML = `
+        ${pkg.popular ? '<span class="coin-badge">Más elegido</span>' : ""}
+        <div class="coin-hex">NC</div>
+        <div class="coin-amount">${formatNumber(pkg.amount)}</div>
+        <div class="coin-label">${escapeHtml(pkg.label)}</div>
+      `;
+
+      card.addEventListener("click", () => {
+        state.paquete = pkg;
+        goToConfirmScreen();
+      });
+
+      els.coinGrid.appendChild(card);
+    });
+  }
+
+  els.backToPlayer.addEventListener("click", () => {
+    setStep(1);
+    showScreen("player");
+  });
+
+  /* -------------------------------------------------------------
+     Pantalla 3 — Confirmar
+     ------------------------------------------------------------- */
+  function goToConfirmScreen() {
+    els.confirmAvatar.src = state.avatar_url || "";
+    els.confirmAvatar.alt = `Foto de perfil de ${state.username}`;
+    els.confirmUsername.textContent = `@${state.username}`;
+    els.confirmAmount.textContent = `${formatNumber(state.paquete.amount)} Netcoins`;
+    els.confirmNewBalance.textContent = `${formatNumber(state.saldo_actual + state.paquete.amount)} Netcoins`;
+
+    els.confirmError.hidden = true;
+    els.confirmBtn.disabled = false;
+    els.confirmBtn.textContent = "Confirmar transacción";
+
+    setStep(3);
+    showScreen("confirm");
+  }
+
+  els.backToPackage.addEventListener("click", () => {
+    setStep(2);
+    showScreen("package");
+  });
+
+  els.confirmBtn.addEventListener("click", async () => {
+    els.confirmBtn.disabled = true;
+    els.confirmBtn.textContent = "Enviando…";
+    els.confirmError.hidden = true;
+
+    try {
+      const data = await callFunction({
+        action: "deliver",
+        roblox_id: state.roblox_id,
+        amount: state.paquete.amount,
+      });
+
+      goToSuccessScreen(data);
+    } catch (err) {
+      els.confirmError.textContent = err.message;
+      els.confirmError.hidden = false;
+      els.confirmBtn.disabled = false;
+      els.confirmBtn.textContent = "Confirmar transacción";
+    }
+  });
+
+  /* -------------------------------------------------------------
+     Pantalla 4 — Exito
+     ------------------------------------------------------------- */
+  function goToSuccessScreen(data) {
+    els.successUsername.textContent = `@${data.username || state.username}`;
+    els.successAmount.textContent = `${formatNumber(state.paquete.amount)} Netcoins entregadas · saldo total: ${formatNumber(data.saldo)}`;
+    showScreen("success");
+  }
+
+  els.restartBtn.addEventListener("click", () => {
+    // Reinicia el estado completo para poder mandar Netcoins a otra persona
+    state.roblox_id = null;
+    state.username = null;
+    state.avatar_url = null;
+    state.saldo_actual = 0;
+    state.paquete = null;
+
+    els.usernameInput.value = "";
+    resetPlayerPreview();
+    clearFieldError();
+    els.continueBtn.disabled = true;
+
+    setStep(1);
+    showScreen("player");
+    els.usernameInput.focus();
+  });
+
 })();
 
-function openUblock(){
-  const ua = navigator.userAgent;
-  let url;
-  if (/Firefox/i.test(ua)){
-    url = "https://addons.mozilla.org/es/firefox/addon/ublock-origin/";
-  } else if (/Edg/i.test(ua)){
-    url = "https://microsoftedge.microsoft.com/addons/detail/ublock-origin/odfafepnkmbhccpbejgmiehpchacaeak";
-  } else if (/OPR|Opera/i.test(ua)){
-    url = "https://addons.opera.com/es/extensions/details/ublock/";
-  } else {
-    // Chrome, Brave, y derivados de Chromium
-    url = "https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm";
-  }
-  window.open(url, "_blank", "noopener");
-  toast("Ábrelo, da clic en 'Agregar' y recarga esta página 🛡️");
-}
-
-initSupabase();
-showConfigWarningIfNeeded();
 </script>
-
-<!-- ================================================================
-SQL DE CONFIGURACIÓN — corre esto una vez en el SQL Editor de tu
-proyecto de Supabase (gratis, supabase.com) antes de usar la app.
-Después activa Realtime para las 3 tablas en Database → Replication.
-
-create extension if not exists pgcrypto;
-
-create table rooms (
-  id text primary key,
-  name text,
-  created_at timestamptz default now()
-);
-
-create table queue (
-  id uuid primary key default gen_random_uuid(),
-  room_id text references rooms(id) on delete cascade,
-  video_id text not null,
-  title text not null,
-  thumbnail text,
-  channel text,
-  added_by text,
-  position bigint not null,
-  created_at timestamptz default now()
-);
-
-create table now_playing (
-  room_id text primary key references rooms(id) on delete cascade,
-  video_id text not null,
-  title text,
-  thumbnail text,
-  channel text,
-  started_at timestamptz not null
-);
-
-create table messages (
-  id uuid primary key default gen_random_uuid(),
-  room_id text references rooms(id) on delete cascade,
-  username text,
-  content text,
-  system boolean default false,
-  created_at timestamptz default now()
-);
-
--- RLS abierto para anon (proyecto sin login). Si crece, restringe esto.
-alter table rooms enable row level security;
-alter table queue enable row level security;
-alter table now_playing enable row level security;
-alter table messages enable row level security;
-
-create policy "anon all rooms" on rooms for all using (true) with check (true);
-create policy "anon all queue" on queue for all using (true) with check (true);
-create policy "anon all now_playing" on now_playing for all using (true) with check (true);
-create policy "anon all messages" on messages for all using (true) with check (true);
-================================================================ -->
 </body>
 </html>
