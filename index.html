@@ -8,154 +8,132 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#1a1a1a;color:#e0e0e0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+html,body{width:100%;height:100%;font-family:'Inter',sans-serif;background:#fff;color:#000}
+body{display:flex;flex-direction:column;overflow:hidden}
 
 /* ── NAVBAR TOP ── */
 .rb-top{
-  height:52px;background:#1a1a1a;border-bottom:1px solid #2d2d2d;
-  display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;z-index:100;
+  height:50px;background:#fff;border-bottom:1px solid #e0e0e0;
+  display:flex;align-items:center;padding:0 12px;gap:12px;flex-shrink:0;z-index:100;
 }
-.rb-logo{display:flex;align-items:center;gap:7px;text-decoration:none;margin-right:6px}
-.rb-logo-img{width:30px;height:30px}
+.rb-menu{width:24px;height:24px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.rb-menu span{width:100%;height:2px;background:#000;border-radius:1px}
+.rb-logo{display:flex;align-items:center;gap:6px;text-decoration:none;margin-right:4px;flex:1}
+.rb-logo-img{width:28px;height:28px}
 .rb-select-badge{
-  background:#e8e8e8;color:#111;font-size:10px;font-weight:800;
-  letter-spacing:.05em;padding:2px 5px;border-radius:3px;
+  background:#000;color:#fff;font-size:9px;font-weight:800;
+  letter-spacing:.06em;padding:2px 4px;border-radius:2px;white-space:nowrap;
 }
-.rb-search-wrap{flex:1;max-width:420px;position:relative}
-.rb-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#888;pointer-events:none}
-.rb-search-input{
-  width:100%;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:6px;
-  color:#ccc;font-size:13.5px;font-family:inherit;padding:7px 12px 7px 32px;outline:none;
-}
-.rb-search-input::placeholder{color:#666}
-.rb-spacer{flex:1}
-.rb-robux-btn{
-  display:flex;align-items:center;gap:7px;background:#00b06f;border:none;
-  border-radius:6px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;
-  padding:6px 13px 6px 9px;cursor:pointer;white-space:nowrap;
-  transition:background .15s,transform .1s;
-}
-.rb-robux-btn:hover{background:#00c97e}
-.rb-robux-btn:active{transform:scale(.97);background:#009d62}
-.rb-robux-icon{width:20px;height:20px;flex-shrink:0}
+.rb-icons{display:flex;align-items:center;gap:14px;flex-shrink:0}
 .rb-icon-btn{
   display:flex;align-items:center;justify-content:center;
-  width:36px;height:36px;background:none;border:none;border-radius:6px;
-  color:#888;cursor:pointer;position:relative;transition:background .15s,color .15s;
+  width:32px;height:32px;background:none;border:none;border-radius:6px;
+  color:#000;cursor:pointer;position:relative;
 }
-.rb-icon-btn:hover{background:#2a2a2a;color:#ccc}
-.rb-icon-btn svg{width:20px;height:20px}
+.rb-icon-btn svg{width:22px;height:22px}
 .rb-badge{
-  position:absolute;top:3px;right:3px;background:#e74c3c;color:#fff;
-  font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;padding:0 3px;
+  position:absolute;top:-4px;right:-4px;background:#e74c3c;color:#fff;
+  font-size:9px;font-weight:700;min-width:18px;height:18px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #fff;
 }
-.rb-sep{width:1px;height:22px;background:#2d2d2d;margin:0 2px;flex-shrink:0}
-.rb-user{display:flex;align-items:center;gap:8px;cursor:default}
-.rb-avatar-sm{width:28px;height:28px;border-radius:50%;background:#3a3a3a;overflow:hidden;flex-shrink:0}
-.rb-avatar-sm img{width:100%;height:100%;object-fit:cover}
-.rb-username{font-size:13px;font-weight:600;color:#e0e0e0;white-space:nowrap}
-
-/* ── LAYOUT PRINCIPAL ── */
-.rb-body{display:flex;flex:1;overflow:hidden}
-
-/* ── SIDEBAR IZQUIERDO ── */
-.rb-sidebar{
-  width:56px;background:#1a1a1a;border-right:1px solid #2d2d2d;
-  display:flex;flex-direction:column;align-items:center;
-  padding:8px 0;gap:2px;flex-shrink:0;overflow-y:auto;
-}
-.sb-item{
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:8px 6px;border-radius:8px;cursor:pointer;width:48px;
-  transition:background .15s;text-decoration:none;color:#888;
-}
-.sb-item:hover{background:#2a2a2a;color:#ccc}
-.sb-item.active{color:#e0e0e0}
-.sb-item svg{width:22px;height:22px;flex-shrink:0}
-.sb-label{font-size:9.5px;font-weight:500;text-align:center;line-height:1.2;white-space:nowrap}
-.sb-avatar{
-  width:26px;height:26px;border-radius:50%;background:#3a3a3a;
-  overflow:hidden;display:flex;align-items:center;justify-content:center;
-}
-.sb-avatar img{width:100%;height:100%;object-fit:cover}
 
 /* ── CONTENIDO PRINCIPAL ── */
-.rb-main{flex:1;overflow-y:auto;padding:24px 28px 40px;background:#1a1a1a}
+.rb-main{
+  flex:1;overflow-y:auto;padding:16px 16px 70px;background:#fff;
+}
 
-/* ── SECCIÓN AMIGOS ── */
+/* ── USUARIO ── */
+.user-section{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.user-avatar{width:48px;height:48px;border-radius:50%;background:#e0e0e0;overflow:hidden;flex-shrink:0}
+.user-avatar img{width:100%;height:100%;object-fit:cover}
+.user-name{font-size:18px;font-weight:700;color:#000}
+
+/* ── AMIGOS ── */
 .section-title{
-  display:flex;align-items:center;gap:8px;
-  font-size:18px;font-weight:700;color:#e8e8e8;margin-bottom:16px;
+  display:flex;align-items:center;gap:6px;
+  font-size:16px;font-weight:700;color:#000;margin-bottom:14px;
+  margin-top:8px;
 }
-.section-title a{color:#e8e8e8;text-decoration:none}
-.section-title .count{font-size:18px;font-weight:700}
-.section-title .chevron{
-  width:20px;height:20px;display:flex;align-items:center;justify-content:center;
-  color:#888;
-}
+.section-title .chevron{width:18px;height:18px;color:#666}
 
 .friends-row{
-  display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;margin-bottom:32px;
+  display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;margin-bottom:28px;
 }
-.friends-row::-webkit-scrollbar{height:4px}
-.friends-row::-webkit-scrollbar-track{background:transparent}
-.friends-row::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.friends-row::-webkit-scrollbar{display:none}
 
 .friend-card{
   display:flex;flex-direction:column;align-items:center;gap:8px;
-  cursor:pointer;flex-shrink:0;width:72px;
+  cursor:pointer;flex-shrink:0;width:64px;
 }
 .friend-avatar{
-  width:64px;height:64px;border-radius:50%;background:#2a2a2a;
+  width:64px;height:64px;border-radius:50%;background:#e0e0e0;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
-  position:relative;
+  border:2px solid #e0e0e0;
 }
-.friend-avatar img{width:100%;height:100%;object-fit:cover}
+.friend-avatar svg{width:100%;height:100%}
 .friend-add-btn{
-  width:64px;height:64px;border-radius:50%;background:#2a2a2a;
+  width:64px;height:64px;border-radius:50%;background:#e0e0e0;
   border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
 }
-.friend-add-btn:hover{background:#333}
-.friend-add-btn svg{width:28px;height:28px;color:#ccc}
+.friend-add-btn svg{width:28px;height:28px;color:#666;stroke-width:1.5}
 .friend-name{
-  font-size:11.5px;color:#c0c0c0;text-align:center;
+  font-size:11px;color:#333;text-align:center;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:72px;
+  font-weight:500;
 }
 
-/* ── SECCIÓN RECOMENDADAS ── */
+/* ── JUEGOS RECOMENDADOS ── */
 .games-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-  gap:18px;
+  display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;
 }
-@media(max-width:600px){
-  .games-grid{
-    grid-template-columns:repeat(2,1fr);
-    gap:10px;
-  }
+.game-card{
+  cursor:pointer;border-radius:12px;overflow:hidden;
+  background:#fff;display:flex;flex-direction:column;
 }
-.game-card{cursor:pointer;border-radius:8px;overflow:hidden;background:#222;transition:transform .15s}
-.game-card:hover{transform:translateY(-3px)}
 .game-thumb{
-  width:100%;aspect-ratio:16/9;background:#2a2a2a;
+  width:100%;aspect-ratio:2/1.2;background:#ddd;
   overflow:hidden;position:relative;
 }
-.game-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-/* Placeholder colorido cuando no hay imagen */
+.game-thumb img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
 .game-thumb-placeholder{
   width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);
-  letter-spacing:.05em;
+  font-size:12px;font-weight:700;color:rgba(0,0,0,0.4);
 }
-.game-info{padding:10px 10px 12px}
+.game-info{padding:10px 8px}
 .game-title{
-  font-size:13px;font-weight:600;color:#e0e0e0;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px;
+  font-size:12px;font-weight:600;color:#000;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;line-height:1.3;
 }
-.game-rating{display:flex;align-items:center;gap:5px;font-size:12px;color:#888}
-.game-rating svg{width:13px;height:13px;color:#6bcf7f;flex-shrink:0}
+.game-rating{
+  display:flex;align-items:center;gap:4px;font-size:11px;color:#333;font-weight:500;
+}
+.game-rating svg{width:14px;height:14px;flex-shrink:0}
+
+/* ── BOTÓN CONTINUAR ── */
+.continue-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:20px;font-weight:700;color:#000;cursor:pointer;
+  padding:16px;background:none;border:none;margin:0 auto 20px;
+}
+.continue-btn:active{opacity:0.7}
+
+/* ── NAVBAR INFERIOR ── */
+.rb-bottom{
+  position:fixed;bottom:0;left:0;right:0;height:60px;
+  background:#fff;border-top:1px solid #e0e0e0;
+  display:flex;justify-content:space-around;align-items:center;
+  z-index:100;padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:pointer;text-decoration:none;color:#000;
+  flex:1;justify-content:center;
+}
+.nav-item svg{width:26px;height:26px;color:#000}
+.nav-item span{font-size:10px;font-weight:600;color:#000;text-align:center}
 
 </style>
 </head>
@@ -166,380 +144,230 @@ body{font-family:'Inter',sans-serif;background:#1a1a1a;color:#e0e0e0;display:fle
      ══════════════════════════════════════════ -->
 <nav class="rb-top">
 
+  <!-- Menu hamburguesa -->
+  <div class="rb-menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
   <!-- Logo -->
   <a class="rb-logo" href="#" onclick="return false">
     <svg class="rb-logo-img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100" height="100" rx="12" fill="#e8e8e8"/>
-      <!-- R de Roblox, forma geométrica característica -->
-      <polygon points="20,15 65,15 80,28 80,52 62,52 80,85 57,85 40,52 36,52 36,85 20,85" fill="#1a1a1a"/>
-      <polygon points="36,28 62,28 66,34 66,42 36,42" fill="#e8e8e8"/>
+      <rect width="100" height="100" rx="8" fill="#000"/>
+      <polygon points="30,25 75,25 85,40 85,65 65,65 80,85 55,85 40,65 35,65 35,85 20,85 30,25" fill="#fff"/>
     </svg>
     <span class="rb-select-badge">SELECT</span>
   </a>
 
-  <!-- Buscador -->
-  <div class="rb-search-wrap">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-    <input class="rb-search-input" type="search" placeholder="Buscar" readonly/>
-  </div>
+  <!-- Iconos derecha -->
+  <div class="rb-icons">
+    <!-- Búsqueda -->
+    <button class="rb-icon-btn" title="Buscar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
 
-  <div class="rb-spacer"></div>
-
-  <!-- Botón Robux — INTERACTIVO -->
-  <button class="rb-robux-btn" id="robuxBtn" type="button">
-    <svg class="rb-robux-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <rect width="24" height="24" rx="4" fill="rgba(255,255,255,0.15)"/>
-      <text x="12" y="17" text-anchor="middle" fill="white" font-size="12" font-weight="800" font-family="Arial,sans-serif">R$</text>
-    </svg>
-    Robux
-  </button>
-
-  <div class="rb-sep"></div>
-
-  <!-- Configuración -->
-  <button class="rb-icon-btn" title="Configuración">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
-  </button>
-
-  <!-- Notificaciones -->
-  <button class="rb-icon-btn" title="Notificaciones">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-    </svg>
-    <span class="rb-badge">3</span>
-  </button>
-
-  <div class="rb-sep"></div>
-
-  <!-- Usuario -->
-  <div class="rb-user">
-    <div class="rb-avatar-sm">
-      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="28" height="28" fill="#3a3a3a"/>
-        <rect x="9" y="4" width="10" height="10" rx="2" fill="#aaa"/>
-        <path d="M4 26c0-5 4.5-8 10-8s10 3 10 8" fill="#aaa"/>
+    <!-- Settings -->
+    <button class="rb-icon-btn" title="Configuración">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
-    </div>
-    <span class="rb-username">dani022011c</span>
+    </button>
+
+    <!-- Notificaciones -->
+    <button class="rb-icon-btn" title="Notificaciones">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span class="rb-badge">3</span>
+    </button>
   </div>
 
 </nav>
 
 <!-- ══════════════════════════════════════════
-     BODY = SIDEBAR + MAIN
+     CONTENIDO PRINCIPAL
      ══════════════════════════════════════════ -->
-<div class="rb-body">
+<main class="rb-main">
 
-  <!-- ── SIDEBAR IZQUIERDO ── -->
-  <aside class="rb-sidebar">
+  <!-- Usuario -->
+  <div class="user-section">
+    <div class="user-avatar">
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" fill="#d0d0d0"/>
+        <rect x="14" y="6" width="20" height="18" rx="2" fill="#888"/>
+        <path d="M6 30c0-6 5-10 18-10s18 4 18 10" fill="#888"/>
+      </svg>
+    </div>
+    <span class="user-name">dani022011c</span>
+  </div>
 
-    <!-- Inicio -->
-    <a class="sb-item active" href="#" onclick="return false">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-      <span class="sb-label">Inicio</span>
-    </a>
+  <!-- Amigos -->
+  <div class="section-title">
+    Amigos
+    <span class="chevron">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </span>
+  </div>
 
-    <!-- Destacadas -->
-    <a class="sb-item" href="#" onclick="return false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <span class="sb-label">Destacadas</span>
-    </a>
+  <div class="friends-row">
+    <!-- Añadir -->
+    <div class="friend-card">
+      <button class="friend-add-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <span class="friend-name">Añadir amigos</span>
+    </div>
 
-    <!-- Avatar -->
-    <a class="sb-item" href="#" onclick="return false">
-      <div class="sb-avatar">
-        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="26" height="26" fill="#3a3a3a"/>
-          <rect x="8" y="3" width="10" height="10" rx="2" fill="#aaa"/>
-          <path d="M3 24c0-5 4-8 10-8s10 3 10 8" fill="#aaa"/>
+    <!-- Amigo 1 -->
+    <div class="friend-card">
+      <div class="friend-avatar">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <rect width="64" height="64" fill="#d0d0d0"/>
+          <rect x="18" y="8" width="28" height="24" rx="2" fill="#999"/>
+          <path d="M8 38c0-7 6-12 24-12s24 5 24 12" fill="#999"/>
         </svg>
       </div>
-      <span class="sb-label">Avatar</span>
-    </a>
-
-    <!-- Equipo / Amigos -->
-    <a class="sb-item" href="#" onclick="return false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-      <span class="sb-label">Equipo</span>
-    </a>
-
-    <!-- Más -->
-    <a class="sb-item" href="#" onclick="return false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
-      </svg>
-      <span class="sb-label">Más</span>
-    </a>
-
-  </aside>
-
-  <!-- ── CONTENIDO ── -->
-  <main class="rb-main">
-
-    <!-- Amigos -->
-    <div class="section-title">
-      <a href="#" onclick="return false">Amigos (32)</a>
-      <span class="chevron">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
-      </span>
+      <span class="friend-name">day</span>
     </div>
 
-    <div class="friends-row">
-      <!-- Botón añadir amigos -->
-      <div class="friend-card">
-        <button class="friend-add-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
-        <span class="friend-name">Añadir amigos</span>
+    <!-- Amigo 2 -->
+    <div class="friend-card">
+      <div class="friend-avatar">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <rect width="64" height="64" fill="#1a1a1a"/>
+          <rect x="18" y="8" width="28" height="24" rx="2" fill="#666"/>
+          <path d="M8 38c0-7 6-12 24-12s24 5 24 12" fill="#666"/>
+        </svg>
       </div>
+      <span class="friend-name">Nalguitasde...</span>
+    </div>
 
-      <!-- Amigos estáticos (avatares con colores planos como Roblox) -->
-      <div class="friend-card">
-        <div class="friend-avatar" style="background:#2a2a2a">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#c0392b"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#2980b9"/>
-          </svg>
-        </div>
-        <span class="friend-name">day</span>
+    <!-- Amigo 3 -->
+    <div class="friend-card">
+      <div class="friend-avatar">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <rect width="64" height="64" fill="#2a2a2a"/>
+          <rect x="18" y="8" width="28" height="24" rx="2" fill="#888"/>
+          <path d="M8 38c0-7 6-12 24-12s24 5 24 12" fill="#888"/>
+        </svg>
       </div>
+      <span class="friend-name">Andr...</span>
+    </div>
+  </div>
 
-      <div class="friend-card">
-        <div class="friend-avatar">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#1a1a1a"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#c0c0c0"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#333"/>
-          </svg>
-        </div>
-        <span class="friend-name">Nalguitasdemia...</span>
+  <!-- Recomendadas -->
+  <div class="section-title" style="margin-top:16px">
+    Recomendadas para ti
+  </div>
+
+  <div class="games-grid">
+
+    <!-- Juego 1 -->
+    <div class="game-card">
+      <div class="game-thumb" style="background:linear-gradient(135deg,#ff1493,#ff69b4)">
+        <div class="game-thumb-placeholder">+1 TECLADO</div>
       </div>
-
-      <div class="friend-card">
-        <div class="friend-avatar">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#8e44ad"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#f0d0a0"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#e74c3c"/>
-          </svg>
+      <div class="game-info">
+        <div class="game-title">[x10] +1 Teclado de esc...</div>
+        <div class="game-rating">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+          Valoración 97%
         </div>
-        <span class="friend-name">Andres</span>
-      </div>
-
-      <div class="friend-card">
-        <div class="friend-avatar">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#16a085"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#2c3e50"/>
-          </svg>
-        </div>
-        <span class="friend-name">neytan202707</span>
-      </div>
-
-      <div class="friend-card">
-        <div class="friend-avatar">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#2c3e50"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#d4a574"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#3498db"/>
-          </svg>
-        </div>
-        <span class="friend-name">Xdshirley</span>
-      </div>
-
-      <div class="friend-card">
-        <div class="friend-avatar">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#f39c12"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#fff"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#e67e22"/>
-          </svg>
-        </div>
-        <span class="friend-name">Fortydomplay1...</span>
-      </div>
-
-      <div class="friend-card">
-        <div class="friend-avatar">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#27ae60"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#1abc9c"/>
-          </svg>
-        </div>
-        <span class="friend-name">Vamps_Z4</span>
-      </div>
-
-      <div class="friend-card">
-        <div class="friend-avatar">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#2980b9"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#8e44ad"/>
-          </svg>
-        </div>
-        <span class="friend-name">Traquete777</span>
-      </div>
-
-      <div class="friend-card">
-        <div class="friend-avatar">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-            <rect width="64" height="64" fill="#7f8c8d"/>
-            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
-            <rect x="14" y="36" width="36" height="28" rx="2" fill="#95a5a6"/>
-          </svg>
-        </div>
-        <span class="friend-name">Miguel</span>
       </div>
     </div>
 
-    <!-- Recomendadas para ti -->
-    <div class="section-title" style="margin-bottom:18px">
-      Recomendadas para ti
+    <!-- Juego 2 -->
+    <div class="game-card">
+      <div class="game-thumb" style="background:linear-gradient(135deg,#bfad00,#ffeb3b)">
+        <div class="game-thumb-placeholder">[NUEVO!🔥]</div>
+      </div>
+      <div class="game-info">
+        <div class="game-title">[NUEVO!🔥] Pintar o b...</div>
+        <div class="game-rating">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+          Valoración 76%
+        </div>
+      </div>
     </div>
 
-    <div class="games-grid">
-
-      <div class="game-card">
-        <div class="game-thumb">
-          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#e91e8c,#ff6b9d)">
-            +1 TECLADO
-          </div>
-        </div>
-        <div class="game-info">
-          <div class="game-title">[x10] +1 Teclado de escape de velocidad |</div>
-          <div class="game-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
-            Valoración 97%
-          </div>
+    <!-- Juego 3 -->
+    <div class="game-card">
+      <div class="game-thumb" style="background:linear-gradient(135deg,#1e88e5,#42a5f5)">
+        <div class="game-thumb-placeholder">⚽ FÚTBOL</div>
+      </div>
+      <div class="game-info">
+        <div class="game-title">Construye un equipo d...</div>
+        <div class="game-rating">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+          Valoración 84%
         </div>
       </div>
-
-      <div class="game-card">
-        <div class="game-thumb">
-          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#4caf50,#81c784)">
-            MINECRAFT
-          </div>
-        </div>
-        <div class="game-info">
-          <div class="game-title">Minecraft: Mejor Edición</div>
-          <div class="game-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
-            Valoración 61%
-          </div>
-        </div>
-      </div>
-
-      <div class="game-card">
-        <div class="game-thumb">
-          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#795548,#a1887f)">
-            CAMALEÓN
-          </div>
-        </div>
-        <div class="game-info">
-          <div class="game-title">[Juegos de calamar!] Camaleón</div>
-          <div class="game-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
-            Valoración 75%
-          </div>
-        </div>
-      </div>
-
-      <div class="game-card">
-        <div class="game-thumb">
-          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#1565c0,#42a5f5)">
-            +999 FUERZA
-          </div>
-        </div>
-        <div class="game-info">
-          <div class="game-title">[UPD🔥] +1 Fuerza por clic</div>
-          <div class="game-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
-            Valoración 98%
-          </div>
-        </div>
-      </div>
-
-      <div class="game-card">
-        <div class="game-thumb">
-          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#1b5e20,#66bb6a)">
-            ⚽ FÚTBOL
-          </div>
-        </div>
-        <div class="game-info">
-          <div class="game-title">Super League Soccer</div>
-          <div class="game-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
-            Valoración 89%
-          </div>
-        </div>
-      </div>
-
-      <div class="game-card">
-        <div class="game-thumb">
-          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#b71c1c,#ef5350)">
-            🔫 SNIPER
-          </div>
-        </div>
-        <div class="game-info">
-          <div class="game-title">Sniper Arena</div>
-          <div class="game-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
-            Valoración 83%
-          </div>
-        </div>
-      </div>
-
-      <div class="game-card">
-        <div class="game-thumb">
-          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#4a148c,#9c27b0)">
-            ⚔️ VS
-          </div>
-        </div>
-        <div class="game-info">
-          <div class="game-title">Battle Arena VS</div>
-          <div class="game-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
-            Valoración 91%
-          </div>
-        </div>
-      </div>
-
-      <div class="game-card">
-        <div class="game-thumb">
-          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#e65100,#ff9800)">
-            🏃 OBBY
-          </div>
-        </div>
-        <div class="game-info">
-          <div class="game-title">Mega Obby Challenge</div>
-          <div class="game-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
-            Valoración 94%
-          </div>
-        </div>
-      </div>
-
     </div>
 
-  </main>
-</div>
+    <!-- Juego 4 -->
+    <div class="game-card">
+      <div class="game-thumb" style="background:linear-gradient(135deg,#1b5e20,#66bb6a)">
+        <div class="game-thumb-placeholder">⚽ WORLD CUP</div>
+      </div>
+      <div class="game-info">
+        <div class="game-title">[ESPAÑA] Super Fútbol</div>
+        <div class="game-rating">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+          Valoración 81%
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Continuar -->
+  <button class="continue-btn" id="continueBtn">
+    Continuar <span style="font-size:22px">></span>
+  </button>
+
+</main>
+
+<!-- ══════════════════════════════════════════
+     NAVBAR INFERIOR
+     ══════════════════════════════════════════ -->
+<nav class="rb-bottom">
+
+  <!-- Inicio -->
+  <a class="nav-item" href="#" onclick="return false">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    <span>Inicio</span>
+  </a>
+
+  <!-- Destacadas -->
+  <a class="nav-item" href="#" onclick="return false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <span>Destacadas</span>
+  </a>
+
+  <!-- Avatar -->
+  <a class="nav-item" href="#" onclick="return false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-5 3.5-8 8-8s8 3 8 8"/>
+    </svg>
+    <span>Avatar</span>
+  </a>
+
+  <!-- Equipo -->
+  <a class="nav-item" href="#" onclick="return false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="4" y="6" width="16" height="12" rx="1"/><path d="M8 10v4M12 10v4M16 10v4"/>
+    </svg>
+    <span>Equipo</span>
+  </a>
+
+</nav>
 
 <script>
-// Botón Robux — listo para conectar la siguiente sección
-document.getElementById("robuxBtn").addEventListener("click", () => {
-  // Aquí conectamos lo siguiente que me digas
-  console.log("robux click");
+document.getElementById("continueBtn").addEventListener("click", () => {
+  console.log("continuar");
 });
 </script>
 </body>
