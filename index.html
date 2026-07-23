@@ -40,7 +40,7 @@ body{display:flex;flex-direction:column;overflow:hidden}
 
 /* ── CONTENIDO PRINCIPAL ── */
 .rb-main{
-  flex:1;overflow-y:auto;padding:16px;background:#fff;padding-bottom:60px;
+  flex:1;overflow-y:auto;padding:12px;background:#fff;padding-bottom:60px;
 }
 
 /* ── USUARIO ── */
@@ -48,53 +48,53 @@ body{display:flex;flex-direction:column;overflow:hidden}
   display:flex;align-items:center;gap:12px;margin-bottom:16px;
 }
 .user-avatar{
-  width:56px;height:56px;border-radius:50%;background:#e0e0e0;overflow:hidden;flex-shrink:0;
+  width:48px;height:48px;border-radius:50%;background:#e0e0e0;overflow:hidden;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
 }
 .user-avatar img{width:100%;height:100%;object-fit:cover}
-.user-name{font-size:24px;font-weight:700;color:#000}
+.user-name{font-size:20px;font-weight:700;color:#000}
 
 /* ── AMIGOS ── */
 .section-title{
-  font-size:18px;font-weight:700;color:#000;margin-bottom:12px;margin-top:0;
+  font-size:16px;font-weight:700;color:#000;margin-bottom:10px;margin-top:0;
 }
 
 .friends-row{
-  display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin-bottom:20px;
+  display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;
 }
 .friends-row::-webkit-scrollbar{display:none}
 
 .friend-card{
   display:flex;flex-direction:column;align-items:center;gap:8px;
-  cursor:pointer;flex-shrink:0;width:80px;
+  cursor:pointer;flex-shrink:0;width:70px;
 }
 .friend-avatar{
-  width:80px;height:80px;border-radius:50%;background:#e0e0e0;
+  width:70px;height:70px;border-radius:50%;background:#e0e0e0;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
   border:2px solid #e0e0e0;
 }
 .friend-avatar img{width:100%;height:100%;object-fit:cover}
 .friend-add-btn{
-  width:80px;height:80px;border-radius:50%;background:#e0e0e0;
+  width:70px;height:70px;border-radius:50%;background:#e0e0e0;
   border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
 }
-.friend-add-btn svg{width:32px;height:32px;color:#999;stroke-width:1.5}
+.friend-add-btn svg{width:28px;height:28px;color:#999;stroke-width:1.5}
 .friend-name{
-  font-size:13px;color:#000;text-align:center;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:90px;
-  font-weight:500;line-height:1.3;
+  font-size:12px;color:#000;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:80px;
+  font-weight:500;line-height:1.2;
 }
 
 /* ── JUEGOS RECOMENDADOS ── */
 .games-grid{
-  display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px;
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;
 }
 .game-card{
   cursor:pointer;border-radius:16px;overflow:hidden;
   background:#fff;display:flex;flex-direction:column;
 }
 .game-thumb{
-  width:100%;aspect-ratio:1.3/1;background:#ddd;
+  width:100%;aspect-ratio:1.6/1;background:#ddd;
   overflow:hidden;position:relative;
 }
 .game-thumb img{
@@ -104,20 +104,20 @@ body{display:flex;flex-direction:column;overflow:hidden}
   width:100%;height:100%;display:flex;align-items:center;justify-content:center;
   font-size:14px;font-weight:700;color:rgba(0,0,0,0.3);background:#f0f0f0;
 }
-.game-info{padding:12px 0}
+.game-info{padding:8px 0}
 .game-title{
-  font-size:14px;font-weight:600;color:#000;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;line-height:1.3;
+  font-size:12px;font-weight:600;color:#000;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;line-height:1.2;
 }
 .game-rating{
-  display:flex;align-items:center;gap:6px;font-size:13px;color:#333;font-weight:600;
+  display:flex;align-items:center;gap:4px;font-size:11px;color:#333;font-weight:600;
 }
-.game-rating svg{width:16px;height:16px;flex-shrink:0}
+.game-rating svg{width:14px;height:14px;flex-shrink:0}
 
 /* ── BOTÓN CONTINUAR ── */
 .continue-btn{
   display:flex;align-items:center;justify-content:flex-start;gap:12px;
-  font-size:28px;font-weight:700;color:#000;cursor:pointer;
+  font-size:24px;font-weight:700;color:#000;cursor:pointer;
   padding:0;background:none;border:none;margin-bottom:0;
 }
 .continue-btn:active{opacity:0.6}
