@@ -1,1103 +1,540 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Netcoins — Envío de monedas</title>
-<meta name="description" content="Envía Netcoins a cualquier jugador de Roblox de forma rápida y segura." />
-
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Roblox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-/* =====================================================================
-   NETCOINS — Sistema de diseño
-   -----------------------------------------------------------------------
-   Paleta: fondo casi-negro con acento violeta-magenta (energia/moneda
-   digital). Tipografia Space Grotesk para titulos + Inter para cuerpo.
-   Firma visual: las "fichas" de Netcoins son hexagonos apilados, no
-   tarjetas rectangulares genericas.
-   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#1a1a1a;color:#e0e0e0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-:root {
-  --bg:            #0B0D10;
-  --surface:       #14171C;
-  --surface-2:     #1B1F26;
-  --border:        #262B33;
-  --border-soft:   #1E222A;
-
-  --text:          #F4F5F7;
-  --text-soft:     #9CA3AF;
-  --text-faint:    #5B6270;
-
-  --accent:        #7C5CFF;
-  --accent-soft:   #9B82FF;
-  --accent-dim:    #2A2150;
-  --accent-text:   #C9BBFF;
-
-  --success:       #2ECC8F;
-  --success-dim:   #133327;
-  --danger:        #FF5C72;
-  --danger-dim:    #3A1620;
-
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 22px;
-
-  --font-display: "Space Grotesk", "Inter", sans-serif;
-  --font-body: "Inter", sans-serif;
+/* ── NAVBAR TOP ── */
+.rb-top{
+  height:52px;background:#1a1a1a;border-bottom:1px solid #2d2d2d;
+  display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;z-index:100;
 }
-
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
+.rb-logo{display:flex;align-items:center;gap:7px;text-decoration:none;margin-right:6px}
+.rb-logo-img{width:30px;height:30px}
+.rb-select-badge{
+  background:#e8e8e8;color:#111;font-size:10px;font-weight:800;
+  letter-spacing:.05em;padding:2px 5px;border-radius:3px;
 }
-
-body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow-x: hidden;
+.rb-search-wrap{flex:1;max-width:420px;position:relative}
+.rb-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#888;pointer-events:none}
+.rb-search-input{
+  width:100%;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:6px;
+  color:#ccc;font-size:13.5px;font-family:inherit;padding:7px 12px 7px 32px;outline:none;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+.rb-search-input::placeholder{color:#666}
+.rb-spacer{flex:1}
+.rb-robux-btn{
+  display:flex;align-items:center;gap:7px;background:#00b06f;border:none;
+  border-radius:6px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;
+  padding:6px 13px 6px 9px;cursor:pointer;white-space:nowrap;
+  transition:background .15s,transform .1s;
 }
-
-/* ---------------------------------------------------------------
-   Fondo: reticula sutil + resplandor radial fijo, sin ruido visual
-   --------------------------------------------------------------- */
-.bg-grid {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle at 18% 12%, rgba(124, 92, 255, 0.16), transparent 42%),
-    radial-gradient(circle at 85% 88%, rgba(124, 92, 255, 0.10), transparent 38%),
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: auto, auto, 56px 56px, 56px 56px;
+.rb-robux-btn:hover{background:#00c97e}
+.rb-robux-btn:active{transform:scale(.97);background:#009d62}
+.rb-robux-icon{width:20px;height:20px;flex-shrink:0}
+.rb-icon-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;background:none;border:none;border-radius:6px;
+  color:#888;cursor:pointer;position:relative;transition:background .15s,color .15s;
 }
-
-/* ---------------------------------------------------------------
-   Iconos: trazos SVG simples en linea, sin libreria externa
-   --------------------------------------------------------------- */
-[class^="icon-"] {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  vertical-align: -0.15em;
-  background-color: currentColor;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
+.rb-icon-btn:hover{background:#2a2a2a;color:#ccc}
+.rb-icon-btn svg{width:20px;height:20px}
+.rb-badge{
+  position:absolute;top:3px;right:3px;background:#e74c3c;color:#fff;
+  font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;padding:0 3px;
 }
-.icon-user { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>"); }
-.icon-arrow-left { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'><path d='M19 12H5M11 18l-6-6 6-6'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'><path d='M19 12H5M11 18l-6-6 6-6'/></svg>"); }
-.icon-clock { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>"); }
-.icon-check { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4'><path d='M5 13l4.5 4.5L19 8'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4'><path d='M5 13l4.5 4.5L19 8'/></svg>"); }
+.rb-sep{width:1px;height:22px;background:#2d2d2d;margin:0 2px;flex-shrink:0}
+.rb-user{display:flex;align-items:center;gap:8px;cursor:default}
+.rb-avatar-sm{width:28px;height:28px;border-radius:50%;background:#3a3a3a;overflow:hidden;flex-shrink:0}
+.rb-avatar-sm img{width:100%;height:100%;object-fit:cover}
+.rb-username{font-size:13px;font-weight:600;color:#e0e0e0;white-space:nowrap}
 
-/* ---------------------------------------------------------------
-   Header / progreso
-   --------------------------------------------------------------- */
-.topbar {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 28px clamp(20px, 5vw, 56px);
-  flex-wrap: wrap;
-  gap: 16px;
+/* ── LAYOUT PRINCIPAL ── */
+.rb-body{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR IZQUIERDO ── */
+.rb-sidebar{
+  width:56px;background:#1a1a1a;border-right:1px solid #2d2d2d;
+  display:flex;flex-direction:column;align-items:center;
+  padding:8px 0;gap:2px;flex-shrink:0;overflow-y:auto;
+}
+.sb-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 6px;border-radius:8px;cursor:pointer;width:48px;
+  transition:background .15s;text-decoration:none;color:#888;
+}
+.sb-item:hover{background:#2a2a2a;color:#ccc}
+.sb-item.active{color:#e0e0e0}
+.sb-item svg{width:22px;height:22px;flex-shrink:0}
+.sb-label{font-size:9.5px;font-weight:500;text-align:center;line-height:1.2;white-space:nowrap}
+.sb-avatar{
+  width:26px;height:26px;border-radius:50%;background:#3a3a3a;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+}
+.sb-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* ── CONTENIDO PRINCIPAL ── */
+.rb-main{flex:1;overflow-y:auto;padding:24px 28px 40px;background:#1a1a1a}
+
+/* ── SECCIÓN AMIGOS ── */
+.section-title{
+  display:flex;align-items:center;gap:8px;
+  font-size:18px;font-weight:700;color:#e8e8e8;margin-bottom:16px;
+}
+.section-title a{color:#e8e8e8;text-decoration:none}
+.section-title .count{font-size:18px;font-weight:700}
+.section-title .chevron{
+  width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+  color:#888;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; }
-.brand-mark {
-  width: 34px; height: 34px;
-  border-radius: 9px;
-  background: var(--accent);
-  color: #0B0D10;
-  font-family: var(--font-display);
-  font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px;
+.friends-row{
+  display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;margin-bottom:32px;
 }
-.brand-name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 18px;
-  letter-spacing: 0.01em;
+.friends-row::-webkit-scrollbar{height:4px}
+.friends-row::-webkit-scrollbar-track{background:transparent}
+.friends-row::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+.friend-card{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;flex-shrink:0;width:72px;
+}
+.friend-avatar{
+  width:64px;height:64px;border-radius:50%;background:#2a2a2a;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.friend-avatar img{width:100%;height:100%;object-fit:cover}
+.friend-add-btn{
+  width:64px;height:64px;border-radius:50%;background:#2a2a2a;
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.friend-add-btn:hover{background:#333}
+.friend-add-btn svg{width:28px;height:28px;color:#ccc}
+.friend-name{
+  font-size:11.5px;color:#c0c0c0;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:72px;
 }
 
-.steps {
-  list-style: none;
-  display: flex;
-  gap: 28px;
-  margin: 0;
-  padding: 0;
+/* ── SECCIÓN RECOMENDADAS ── */
+.games-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:18px;
 }
-.step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-faint);
-  font-weight: 500;
+.game-card{cursor:pointer;border-radius:8px;overflow:hidden;background:#222;transition:transform .15s}
+.game-card:hover{transform:translateY(-3px)}
+.game-thumb{
+  width:100%;aspect-ratio:16/9;background:#2a2a2a;
+  overflow:hidden;position:relative;
 }
-.step-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--border);
-  transition: background 0.25s ease, box-shadow 0.25s ease;
+.game-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+/* Placeholder colorido cuando no hay imagen */
+.game-thumb-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);
+  letter-spacing:.05em;
 }
-.step.is-active { color: var(--text); }
-.step.is-active .step-dot {
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-dim);
+.game-info{padding:10px 10px 12px}
+.game-title{
+  font-size:13px;font-weight:600;color:#e0e0e0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px;
 }
-.step.is-done { color: var(--text-soft); }
-.step.is-done .step-dot { background: var(--success); }
-
-/* ---------------------------------------------------------------
-   Stage / pantallas
-   --------------------------------------------------------------- */
-.stage {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px clamp(16px, 5vw, 56px) 64px;
-}
-
-.screen {
-  display: none;
-  width: 100%;
-  animation: rise 0.45s ease;
-}
-.screen.is-active { display: flex; justify-content: center; }
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.panel {
-  width: 100%;
-}
-.panel-narrow { max-width: 440px; }
-.panel-wide   { max-width: 760px; }
-.panel-center { text-align: center; display: flex; flex-direction: column; align-items: center; }
-
-.eyebrow {
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent-text);
-  margin: 0 0 10px;
-}
-.eyebrow-success { color: var(--success); }
-
-h1 {
-  font-family: var(--font-display);
-  font-size: clamp(24px, 3.4vw, 32px);
-  line-height: 1.2;
-  font-weight: 600;
-  margin: 0 0 10px;
-  letter-spacing: -0.01em;
-}
-
-.subtitle {
-  color: var(--text-soft);
-  font-size: 15px;
-  line-height: 1.55;
-  margin: 0 0 32px;
-  max-width: 46ch;
-}
-
-/* ---------------------------------------------------------------
-   Pantalla 1 — avatar + formulario
-   --------------------------------------------------------------- */
-.avatar-frame {
-  position: relative;
-  width: 104px;
-  height: 104px;
-  margin: 0 auto 28px;
-}
-.avatar-placeholder, .avatar-img {
-  position: absolute;
-  inset: 0;
-  width: 104px;
-  height: 104px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--surface-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 38px;
-  color: var(--text-faint);
-  overflow: hidden;
-  text-indent: -9999px;
-}
-.avatar-placeholder { text-indent: 0; }
-.avatar-img[hidden] { display: none; }
-.avatar-img { display: block; }
-.avatar-ring {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
-}
-.avatar-frame.is-found .avatar-ring {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 5px var(--accent-dim);
-}
-
-.field-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-soft);
-  margin-bottom: 8px;
-}
-
-.input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-.input-wrap:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-dim);
-}
-.input-prefix {
-  padding-left: 16px;
-  color: var(--text-faint);
-  font-weight: 500;
-  font-size: 15px;
-}
-.text-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text);
-  font-size: 15px;
-  font-family: var(--font-body);
-  padding: 14px 14px 14px 6px;
-}
-.text-input::placeholder { color: var(--text-faint); }
-
-.input-spinner {
-  width: 16px; height: 16px;
-  margin-right: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent-soft);
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.player-name {
-  margin: 12px 2px 0;
-  font-size: 14px;
-  color: var(--text-soft);
-}
-.player-name strong { color: var(--text); font-weight: 500; }
-
-.field-error {
-  margin: 12px 2px 0;
-  font-size: 13.5px;
-  color: var(--danger);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* ---------------------------------------------------------------
-   Botones
-   --------------------------------------------------------------- */
-.btn {
-  font-family: var(--font-body);
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  border: none;
-  cursor: pointer;
-  padding: 14px 22px;
-  transition: transform 0.12s ease, opacity 0.18s ease, background 0.18s ease;
-}
-.btn:active { transform: scale(0.98); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.btn-primary {
-  background: var(--accent);
-  color: #0B0D10;
-}
-.btn-primary:hover:not(:disabled) { background: var(--accent-soft); }
-
-.btn-block { width: 100%; margin-top: 26px; }
-
-.btn-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  color: var(--text-soft);
-  font-size: 13.5px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 24px;
-}
-.btn-back:hover { color: var(--text); }
-
-/* ---------------------------------------------------------------
-   Pantalla 2 — pildora de destinatario + grid de monedas
-   --------------------------------------------------------------- */
-.recipient-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 6px 16px 6px 6px;
-  margin-bottom: 22px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--text-soft);
-}
-.recipient-pill-img {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--surface-2);
-  overflow: hidden;
-  text-indent: -9999px;
-  flex-shrink: 0;
-}
-
-.coin-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.coin-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 26px 18px 22px;
-  cursor: pointer;
-  text-align: center;
-  transition: border-color 0.18s ease, transform 0.12s ease, background 0.18s ease;
-}
-.coin-card:hover {
-  border-color: var(--border-soft);
-  background: var(--surface-2);
-  transform: translateY(-2px);
-}
-.coin-card:active { transform: translateY(0) scale(0.99); }
-.coin-card.is-popular { border-color: var(--accent); }
-
-.coin-badge {
-  position: absolute;
-  top: -11px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: #0B0D10;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 999px;
-}
-
-/* Ficha hexagonal: la firma visual de la marca */
-.coin-hex {
-  width: 56px;
-  height: 56px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(155deg, var(--accent-soft), var(--accent));
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  color: #0B0D10;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.coin-amount {
-  font-family: var(--font-display);
-  font-size: 21px;
-  font-weight: 600;
-}
-.coin-label {
-  font-size: 12px;
-  color: var(--text-faint);
-  margin-top: -10px;
-}
-
-/* ---------------------------------------------------------------
-   Pantalla 3 — recibo de confirmacion
-   --------------------------------------------------------------- */
-.receipt {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 22px;
-  margin-bottom: 18px;
-}
-
-.receipt-recipient {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--border-soft);
-  margin-bottom: 18px;
-}
-.receipt-avatar {
-  width: 46px; height: 46px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--surface-2);
-  overflow: hidden;
-  text-indent: -9999px;
-  flex-shrink: 0;
-}
-.receipt-label { margin: 0; font-size: 12px; color: var(--text-faint); }
-.receipt-value { margin: 2px 0 0; font-size: 15.5px; font-weight: 500; }
-
-.receipt-rows { margin: 0; }
-.receipt-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 14px;
-  padding: 8px 0;
-}
-.receipt-row dt { color: var(--text-soft); margin: 0; }
-.receipt-row dd { margin: 0; font-weight: 500; }
-.receipt-row-total dd {
-  font-family: var(--font-display);
-  font-size: 17px;
-  color: var(--accent-text);
-}
-
-.notice {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  background: var(--surface-2);
-  border-radius: var(--radius-md);
-  padding: 13px 14px;
-  margin-top: 18px;
-  font-size: 13px;
-  color: var(--text-soft);
-  line-height: 1.5;
-}
-.notice .icon-clock {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--accent-text);
-}
-.notice strong { color: var(--text); font-weight: 600; }
-
-/* ---------------------------------------------------------------
-   Pantalla 4 — exito
-   --------------------------------------------------------------- */
-.success-icon {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: var(--success-dim);
-  color: var(--success);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px;
-  margin-bottom: 20px;
-}
-
-.success-username {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 600;
-  color: var(--accent-text);
-  margin: 0 0 6px;
-}
-.success-amount {
-  font-size: 15px;
-  color: var(--text-soft);
-  margin: 0 0 8px;
-}
-
-/* ---------------------------------------------------------------
-   Toast de error general
-   --------------------------------------------------------------- */
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  background: var(--danger-dim);
-  border: 1px solid var(--danger);
-  color: #FFD7DC;
-  font-size: 13.5px;
-  font-weight: 500;
-  padding: 12px 18px;
-  border-radius: var(--radius-md);
-  z-index: 10;
-  max-width: 90vw;
-}
-
-/* ---------------------------------------------------------------
-   Responsive
-   --------------------------------------------------------------- */
-@media (max-width: 560px) {
-  .steps { gap: 16px; }
-  .step span:not(.step-dot) { display: none; }
-  .coin-grid { grid-template-columns: repeat(2, 1fr); }
-}
+.game-rating{display:flex;align-items:center;gap:5px;font-size:12px;color:#888}
+.game-rating svg{width:13px;height:13px;color:#6bcf7f;flex-shrink:0}
 
 </style>
 </head>
 <body>
 
-<div class="bg-grid" aria-hidden="true"></div>
+<!-- ══════════════════════════════════════════
+     NAVBAR TOP
+     ══════════════════════════════════════════ -->
+<nav class="rb-top">
 
-<header class="topbar">
-  <div class="brand">
-    <span class="brand-mark">N</span>
-    <span class="brand-name">Netcoins</span>
+  <!-- Logo -->
+  <a class="rb-logo" href="#" onclick="return false">
+    <svg class="rb-logo-img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="12" fill="#e8e8e8"/>
+      <!-- R de Roblox, forma geométrica característica -->
+      <polygon points="20,15 65,15 80,28 80,52 62,52 80,85 57,85 40,52 36,52 36,85 20,85" fill="#1a1a1a"/>
+      <polygon points="36,28 62,28 66,34 66,42 36,42" fill="#e8e8e8"/>
+    </svg>
+    <span class="rb-select-badge">SELECT</span>
+  </a>
+
+  <!-- Buscador -->
+  <div class="rb-search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="rb-search-input" type="search" placeholder="Buscar" readonly/>
   </div>
-  <ol class="steps" id="steps" aria-label="Progreso">
-    <li class="step is-active" data-step="1"><span class="step-dot"></span>Jugador</li>
-    <li class="step" data-step="2"><span class="step-dot"></span>Paquete</li>
-    <li class="step" data-step="3"><span class="step-dot"></span>Confirmar</li>
-  </ol>
-</header>
 
-<main class="stage">
+  <div class="rb-spacer"></div>
 
-  <!-- ============================================================ -->
-  <!-- PANTALLA 1 — Buscar jugador                                  -->
-  <!-- ============================================================ -->
-  <section class="screen is-active" id="screen-player" aria-labelledby="player-heading">
-    <div class="panel panel-narrow">
-      <p class="eyebrow">Paso 1 de 3</p>
-      <h1 id="player-heading">¿A quién le mandamos Robux?</h1>
-      <p class="subtitle">Escribe el nombre de usuario de Roblox del jugador que va a recibir los Robux.</p>
+  <!-- Botón Robux — INTERACTIVO -->
+  <button class="rb-robux-btn" id="robuxBtn" type="button">
+    <svg class="rb-robux-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" rx="4" fill="rgba(255,255,255,0.15)"/>
+      <text x="12" y="17" text-anchor="middle" fill="white" font-size="12" font-weight="800" font-family="Arial,sans-serif">R$</text>
+    </svg>
+    Robux
+  </button>
 
-      <div class="avatar-frame" id="avatarFrame">
-        <div class="avatar-placeholder" id="avatarPlaceholder">
-          <i class="icon-user" aria-hidden="true"></i>
-        </div>
-        <img id="avatarImg" class="avatar-img" alt="" hidden />
-        <div class="avatar-ring" aria-hidden="true"></div>
+  <div class="rb-sep"></div>
+
+  <!-- Configuración -->
+  <button class="rb-icon-btn" title="Configuración">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+
+  <!-- Notificaciones -->
+  <button class="rb-icon-btn" title="Notificaciones">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+    <span class="rb-badge">3</span>
+  </button>
+
+  <div class="rb-sep"></div>
+
+  <!-- Usuario -->
+  <div class="rb-user">
+    <div class="rb-avatar-sm">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="28" height="28" fill="#3a3a3a"/>
+        <rect x="9" y="4" width="10" height="10" rx="2" fill="#aaa"/>
+        <path d="M4 26c0-5 4.5-8 10-8s10 3 10 8" fill="#aaa"/>
+      </svg>
+    </div>
+    <span class="rb-username">dani022011c</span>
+  </div>
+
+</nav>
+
+<!-- ══════════════════════════════════════════
+     BODY = SIDEBAR + MAIN
+     ══════════════════════════════════════════ -->
+<div class="rb-body">
+
+  <!-- ── SIDEBAR IZQUIERDO ── -->
+  <aside class="rb-sidebar">
+
+    <!-- Inicio -->
+    <a class="sb-item active" href="#" onclick="return false">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span class="sb-label">Inicio</span>
+    </a>
+
+    <!-- Destacadas -->
+    <a class="sb-item" href="#" onclick="return false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span class="sb-label">Destacadas</span>
+    </a>
+
+    <!-- Avatar -->
+    <a class="sb-item" href="#" onclick="return false">
+      <div class="sb-avatar">
+        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="26" height="26" fill="#3a3a3a"/>
+          <rect x="8" y="3" width="10" height="10" rx="2" fill="#aaa"/>
+          <path d="M3 24c0-5 4-8 10-8s10 3 10 8" fill="#aaa"/>
+        </svg>
       </div>
+      <span class="sb-label">Avatar</span>
+    </a>
 
-      <form id="playerForm" class="player-form" novalidate>
-        <label for="username" class="field-label">Usuario de Roblox</label>
-        <div class="input-wrap">
-          <span class="input-prefix">@</span>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            class="text-input"
-            placeholder="nombre_de_usuario"
-            autocomplete="off"
-            spellcheck="false"
-            required
-          />
-          <span class="input-spinner" id="inputSpinner" hidden></span>
-        </div>
+    <!-- Equipo / Amigos -->
+    <a class="sb-item" href="#" onclick="return false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span class="sb-label">Equipo</span>
+    </a>
 
-        <p class="player-name" id="playerName" hidden></p>
-        <p class="field-error" id="fieldError" role="alert" hidden></p>
+    <!-- Más -->
+    <a class="sb-item" href="#" onclick="return false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+      </svg>
+      <span class="sb-label">Más</span>
+    </a>
 
-        <button type="submit" class="btn btn-primary btn-block" id="continueBtn" disabled>
-          Continuar
+  </aside>
+
+  <!-- ── CONTENIDO ── -->
+  <main class="rb-main">
+
+    <!-- Amigos -->
+    <div class="section-title">
+      <a href="#" onclick="return false">Amigos (32)</a>
+      <span class="chevron">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+      </span>
+    </div>
+
+    <div class="friends-row">
+      <!-- Botón añadir amigos -->
+      <div class="friend-card">
+        <button class="friend-add-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         </button>
-      </form>
-    </div>
-  </section>
-
-  <!-- ============================================================ -->
-  <!-- PANTALLA 2 — Elegir paquete                                  -->
-  <!-- ============================================================ -->
-  <section class="screen" id="screen-package" aria-labelledby="package-heading">
-    <div class="panel panel-wide">
-      <button type="button" class="btn-back" id="backToPlayer" aria-label="Volver al paso anterior">
-        <i class="icon-arrow-left" aria-hidden="true"></i> Cambiar jugador
-      </button>
-
-      <div class="recipient-pill" id="recipientPill">
-        <img id="recipientAvatar" class="recipient-pill-img" alt="" />
-        <span id="recipientName"></span>
+        <span class="friend-name">Añadir amigos</span>
       </div>
 
-      <p class="eyebrow">Paso 2 de 3</p>
-      <h1 id="package-heading">Elige cuantos Robux enviar</h1>
-      <p class="subtitle">Selecciona uno de los paquetes disponibles.</p>
+      <!-- Amigos estáticos (avatares con colores planos como Roblox) -->
+      <div class="friend-card">
+        <div class="friend-avatar" style="background:#2a2a2a">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#c0392b"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#2980b9"/>
+          </svg>
+        </div>
+        <span class="friend-name">day</span>
+      </div>
 
-      <div class="coin-grid" id="coinGrid" role="list"></div>
+      <div class="friend-card">
+        <div class="friend-avatar">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#1a1a1a"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#c0c0c0"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#333"/>
+          </svg>
+        </div>
+        <span class="friend-name">Nalguitasdemia...</span>
+      </div>
+
+      <div class="friend-card">
+        <div class="friend-avatar">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#8e44ad"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#f0d0a0"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#e74c3c"/>
+          </svg>
+        </div>
+        <span class="friend-name">Andres</span>
+      </div>
+
+      <div class="friend-card">
+        <div class="friend-avatar">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#16a085"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#2c3e50"/>
+          </svg>
+        </div>
+        <span class="friend-name">neytan202707</span>
+      </div>
+
+      <div class="friend-card">
+        <div class="friend-avatar">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#2c3e50"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#d4a574"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#3498db"/>
+          </svg>
+        </div>
+        <span class="friend-name">Xdshirley</span>
+      </div>
+
+      <div class="friend-card">
+        <div class="friend-avatar">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#f39c12"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#fff"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#e67e22"/>
+          </svg>
+        </div>
+        <span class="friend-name">Fortydomplay1...</span>
+      </div>
+
+      <div class="friend-card">
+        <div class="friend-avatar">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#27ae60"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#1abc9c"/>
+          </svg>
+        </div>
+        <span class="friend-name">Vamps_Z4</span>
+      </div>
+
+      <div class="friend-card">
+        <div class="friend-avatar">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#2980b9"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#8e44ad"/>
+          </svg>
+        </div>
+        <span class="friend-name">Traquete777</span>
+      </div>
+
+      <div class="friend-card">
+        <div class="friend-avatar">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+            <rect width="64" height="64" fill="#7f8c8d"/>
+            <rect x="20" y="8" width="24" height="24" rx="3" fill="#e8c4a0"/>
+            <rect x="14" y="36" width="36" height="28" rx="2" fill="#95a5a6"/>
+          </svg>
+        </div>
+        <span class="friend-name">Miguel</span>
+      </div>
     </div>
-  </section>
 
-  <!-- ============================================================ -->
-  <!-- PANTALLA 3 — Confirmar                                       -->
-  <!-- ============================================================ -->
-  <section class="screen" id="screen-confirm" aria-labelledby="confirm-heading">
-    <div class="panel panel-narrow">
-      <button type="button" class="btn-back" id="backToPackage" aria-label="Volver al paso anterior">
-        <i class="icon-arrow-left" aria-hidden="true"></i> Cambiar paquete
-      </button>
+    <!-- Recomendadas para ti -->
+    <div class="section-title" style="margin-bottom:18px">
+      Recomendadas para ti
+    </div>
 
-      <p class="eyebrow">Paso 3 de 3</p>
-      <h1 id="confirm-heading">Confirma la transacción</h1>
+    <div class="games-grid">
 
-      <div class="receipt" id="receipt">
-        <div class="receipt-recipient">
-          <img id="confirmAvatar" class="receipt-avatar" alt="" />
-          <div>
-            <p class="receipt-label">Jugador</p>
-            <p class="receipt-value" id="confirmUsername"></p>
+      <div class="game-card">
+        <div class="game-thumb">
+          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#e91e8c,#ff6b9d)">
+            +1 TECLADO
           </div>
         </div>
-
-        <dl class="receipt-rows">
-          <div class="receipt-row">
-            <dt>Cantidad</dt>
-            <dd id="confirmAmount"></dd>
+        <div class="game-info">
+          <div class="game-title">[x10] +1 Teclado de escape de velocidad |</div>
+          <div class="game-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+            Valoración 97%
           </div>
-          <div class="receipt-row receipt-row-total">
-            <dt>Saldo después del envío</dt>
-            <dd id="confirmNewBalance"></dd>
-          </div>
-        </dl>
-
-        <div class="notice">
-          <i class="icon-clock" aria-hidden="true"></i>
-          <p>Los Robux llegan a la cuenta del jugador en un plazo de <strong>24 a 48 horas hábiles</strong>.</p>
         </div>
       </div>
 
-      <p class="field-error" id="confirmError" role="alert" hidden></p>
-
-      <button type="button" class="btn btn-primary btn-block" id="confirmBtn">
-        Confirmar transacción
-      </button>
-    </div>
-  </section>
-
-  <!-- ============================================================ -->
-  <!-- PANTALLA 4 — Éxito                                           -->
-  <!-- ============================================================ -->
-  <section class="screen" id="screen-success" aria-labelledby="success-heading">
-    <div class="panel panel-narrow panel-center">
-      <div class="success-icon" aria-hidden="true">
-        <i class="icon-check"></i>
+      <div class="game-card">
+        <div class="game-thumb">
+          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#4caf50,#81c784)">
+            MINECRAFT
+          </div>
+        </div>
+        <div class="game-info">
+          <div class="game-title">Minecraft: Mejor Edición</div>
+          <div class="game-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+            Valoración 61%
+          </div>
+        </div>
       </div>
-      <p class="eyebrow eyebrow-success">Transacción completada</p>
-      <h1 id="success-heading">Robux enviados exitosamente a:</h1>
-      <p class="success-username" id="successUsername"></p>
-      <p class="success-amount" id="successAmount"></p>
 
-      <button type="button" class="btn btn-primary btn-block" id="restartBtn">
-        Regresar al principio
-      </button>
+      <div class="game-card">
+        <div class="game-thumb">
+          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#795548,#a1887f)">
+            CAMALEÓN
+          </div>
+        </div>
+        <div class="game-info">
+          <div class="game-title">[Juegos de calamar!] Camaleón</div>
+          <div class="game-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+            Valoración 75%
+          </div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-thumb">
+          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#1565c0,#42a5f5)">
+            +999 FUERZA
+          </div>
+        </div>
+        <div class="game-info">
+          <div class="game-title">[UPD🔥] +1 Fuerza por clic</div>
+          <div class="game-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+            Valoración 98%
+          </div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-thumb">
+          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#1b5e20,#66bb6a)">
+            ⚽ FÚTBOL
+          </div>
+        </div>
+        <div class="game-info">
+          <div class="game-title">Super League Soccer</div>
+          <div class="game-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+            Valoración 89%
+          </div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-thumb">
+          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#b71c1c,#ef5350)">
+            🔫 SNIPER
+          </div>
+        </div>
+        <div class="game-info">
+          <div class="game-title">Sniper Arena</div>
+          <div class="game-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+            Valoración 83%
+          </div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-thumb">
+          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#4a148c,#9c27b0)">
+            ⚔️ VS
+          </div>
+        </div>
+        <div class="game-info">
+          <div class="game-title">Battle Arena VS</div>
+          <div class="game-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+            Valoración 91%
+          </div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-thumb">
+          <div class="game-thumb-placeholder" style="background:linear-gradient(135deg,#e65100,#ff9800)">
+            🏃 OBBY
+          </div>
+        </div>
+        <div class="game-info">
+          <div class="game-title">Mega Obby Challenge</div>
+          <div class="game-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5l-9 9h4v4l9-9h-4z"/></svg>
+            Valoración 94%
+          </div>
+        </div>
+      </div>
+
     </div>
-  </section>
 
-</main>
-
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </main>
+</div>
 
 <script>
-/* =====================================================================
-   CONFIGURACION — busca este bloque y edita solo estos valores.
-   Todo el HTML, CSS y JS de la pagina vive en este unico archivo.
-   ===================================================================== */
-
-const NETCOINS_CONFIG = {
-
-  // -------------------------------------------------------------
-  // 1) Datos de tu proyecto de Supabase
-  //    Los encuentras en: Supabase > tu proyecto > Settings > API
-  // -------------------------------------------------------------
-  SUPABASE_URL: "https://meiwuluwrdjszxeyoqtt.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_gZgGIamNJqf8ir8vvt1OTw_bJ-rosi4",
-
-  // URL de tu Edge Function (ver instrucciones de instalacion).
-  // Normalmente es: https://TU-PROYECTO.supabase.co/functions/v1/roblox-user
-  FUNCTION_URL: "https://meiwuluwrdjszxeyoqtt.supabase.co/functions/v1/roblox-user",
-
-  // -------------------------------------------------------------
-  // 2) Paquetes de Netcoins disponibles
-  //    Agrega, quita o edita los que quieras. "popular: true" le
-  //    pone una etiqueta destacada a ese paquete (usa solo uno).
-  // -------------------------------------------------------------
-  PACKAGES: [
-    { amount: 100},
-    { amount: 500},
-    { amount: 1000},
-    { amount: 2500},
-    { amount: 5000},
-    { amount: 10000},
-  ],
-};
-
-
-/* =====================================================================
-   NETCOINS — Logica de la aplicacion
-   -----------------------------------------------------------------------
-   Maneja las 4 pantallas (jugador, paquete, confirmar, exito), llama a
-   la Edge Function de Supabase para buscar al jugador de Roblox y para
-   entregar las Netcoins, y guarda el estado de la transaccion actual.
-   ===================================================================== */
-
-(() => {
-  "use strict";
-
-  /* -------------------------------------------------------------
-     Estado de la transaccion en curso
-     ------------------------------------------------------------- */
-  const state = {
-    roblox_id: null,
-    username: null,
-    avatar_url: null,
-    saldo_actual: 0,
-    paquete: null, // { amount, label }
-  };
-
-  /* -------------------------------------------------------------
-     Referencias al DOM
-     ------------------------------------------------------------- */
-  const els = {
-    steps: document.querySelectorAll(".step"),
-
-    // pantalla 1
-    playerForm: document.getElementById("playerForm"),
-    usernameInput: document.getElementById("username"),
-    continueBtn: document.getElementById("continueBtn"),
-    inputSpinner: document.getElementById("inputSpinner"),
-    avatarFrame: document.getElementById("avatarFrame"),
-    avatarImg: document.getElementById("avatarImg"),
-    avatarPlaceholder: document.getElementById("avatarPlaceholder"),
-    playerName: document.getElementById("playerName"),
-    fieldError: document.getElementById("fieldError"),
-
-    // pantalla 2
-    backToPlayer: document.getElementById("backToPlayer"),
-    recipientPill: document.getElementById("recipientPill"),
-    recipientAvatar: document.getElementById("recipientAvatar"),
-    recipientName: document.getElementById("recipientName"),
-    coinGrid: document.getElementById("coinGrid"),
-
-    // pantalla 3
-    backToPackage: document.getElementById("backToPackage"),
-    confirmAvatar: document.getElementById("confirmAvatar"),
-    confirmUsername: document.getElementById("confirmUsername"),
-    confirmAmount: document.getElementById("confirmAmount"),
-    confirmNewBalance: document.getElementById("confirmNewBalance"),
-    confirmBtn: document.getElementById("confirmBtn"),
-    confirmError: document.getElementById("confirmError"),
-
-    // pantalla 4
-    successUsername: document.getElementById("successUsername"),
-    successAmount: document.getElementById("successAmount"),
-    restartBtn: document.getElementById("restartBtn"),
-
-    toast: document.getElementById("toast"),
-  };
-
-  const screens = {
-    player: document.getElementById("screen-player"),
-    package: document.getElementById("screen-package"),
-    confirm: document.getElementById("screen-confirm"),
-    success: document.getElementById("screen-success"),
-  };
-
-  /* -------------------------------------------------------------
-     Utilidades
-     ------------------------------------------------------------- */
-  function formatNumber(n) {
-    return new Intl.NumberFormat("es-MX").format(n);
-  }
-
-  function showScreen(name) {
-    Object.values(screens).forEach((s) => s.classList.remove("is-active"));
-    screens[name].classList.add("is-active");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function setStep(stepNumber) {
-    els.steps.forEach((step) => {
-      const n = Number(step.dataset.step);
-      step.classList.toggle("is-active", n === stepNumber);
-      step.classList.toggle("is-done", n < stepNumber);
-    });
-  }
-
-  function showToast(message) {
-    els.toast.textContent = message;
-    els.toast.hidden = false;
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => { els.toast.hidden = true; }, 4500);
-  }
-
-  function showFieldError(message) {
-    els.fieldError.textContent = message;
-    els.fieldError.hidden = false;
-  }
-
-  function clearFieldError() {
-    els.fieldError.hidden = true;
-    els.fieldError.textContent = "";
-  }
-
-  async function callFunction(payload) {
-    const res = await fetch(NETCOINS_CONFIG.FUNCTION_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${NETCOINS_CONFIG.SUPABASE_ANON_KEY}`,
-        apikey: NETCOINS_CONFIG.SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(data.error || "Ocurrió un error inesperado.");
-    }
-    return data;
-  }
-
-  /* -------------------------------------------------------------
-     Pantalla 1 — Buscar jugador (con debounce mientras escribe)
-     ------------------------------------------------------------- */
-  let debounceTimer = null;
-  let searchToken = 0; // evita que una respuesta vieja pise a una nueva
-
-  els.usernameInput.addEventListener("input", () => {
-    const value = els.usernameInput.value.trim();
-    clearFieldError();
-    resetPlayerPreview();
-    els.continueBtn.disabled = true;
-
-    clearTimeout(debounceTimer);
-    if (value.length < 3) return;
-
-    debounceTimer = setTimeout(() => lookupPlayer(value), 550);
-  });
-
-  function resetPlayerPreview() {
-    els.avatarImg.hidden = true;
-    els.avatarPlaceholder.hidden = false;
-    els.avatarFrame.classList.remove("is-found");
-    els.playerName.hidden = true;
-    state.roblox_id = null;
-    state.username = null;
-    state.avatar_url = null;
-  }
-
-  async function lookupPlayer(username) {
-    const myToken = ++searchToken;
-    els.inputSpinner.hidden = false;
-
-    try {
-      const data = await callFunction({ action: "lookup", username });
-      if (myToken !== searchToken) return; // llego tarde, ignorar
-
-      state.roblox_id = data.roblox_id;
-      state.username = data.username;
-      state.avatar_url = data.avatar_url;
-      state.saldo_actual = Number(data.saldo) || 0;
-
-      if (data.avatar_url) {
-        els.avatarImg.src = data.avatar_url;
-        els.avatarImg.alt = `Foto de perfil de ${data.username} en Roblox`;
-        els.avatarImg.hidden = false;
-        els.avatarPlaceholder.hidden = true;
-      }
-      els.avatarFrame.classList.add("is-found");
-
-      els.playerName.innerHTML = `Jugador encontrado: <strong>${escapeHtml(data.display_name || data.username)}</strong> (@${escapeHtml(data.username)})`;
-      els.playerName.hidden = false;
-
-      els.continueBtn.disabled = false;
-    } catch (err) {
-      if (myToken !== searchToken) return;
-      showFieldError(err.message);
-      els.continueBtn.disabled = true;
-    } finally {
-      if (myToken === searchToken) els.inputSpinner.hidden = true;
-    }
-  }
-
-  function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  els.playerForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    if (!state.roblox_id) return;
-    goToPackageScreen();
-  });
-
-  /* -------------------------------------------------------------
-     Pantalla 2 — Elegir paquete
-     ------------------------------------------------------------- */
-  function goToPackageScreen() {
-    els.recipientAvatar.src = state.avatar_url || "";
-    els.recipientAvatar.alt = `Foto de perfil de ${state.username}`;
-    els.recipientName.textContent = `@${state.username}`;
-
-    renderCoinGrid();
-    setStep(2);
-    showScreen("package");
-  }
-
-  function renderCoinGrid() {
-    els.coinGrid.innerHTML = "";
-
-    NETCOINS_CONFIG.PACKAGES.forEach((pkg) => {
-      const card = document.createElement("button");
-      card.type = "button";
-      card.className = "coin-card" + (pkg.popular ? " is-popular" : "");
-      card.setAttribute("role", "listitem");
-      card.setAttribute("aria-label", `${formatNumber(pkg.amount)} Netcoins, paquete ${pkg.label}`);
-
-      card.innerHTML = `
-        ${pkg.popular ? '<span class="coin-badge">Más elegido</span>' : ""}
-        <div class="coin-hex">R</div>
-        <div class="coin-amount">${formatNumber(pkg.amount)}</div>
-        <div class="coin-label">${escapeHtml(pkg.label)}</div>
-      `;
-
-      card.addEventListener("click", () => {
-        state.paquete = pkg;
-        goToConfirmScreen();
-      });
-
-      els.coinGrid.appendChild(card);
-    });
-  }
-
-  els.backToPlayer.addEventListener("click", () => {
-    setStep(1);
-    showScreen("player");
-  });
-
-  /* -------------------------------------------------------------
-     Pantalla 3 — Confirmar
-     ------------------------------------------------------------- */
-  function goToConfirmScreen() {
-    els.confirmAvatar.src = state.avatar_url || "";
-    els.confirmAvatar.alt = `Foto de perfil de ${state.username}`;
-    els.confirmUsername.textContent = `@${state.username}`;
-    els.confirmAmount.textContent = `${formatNumber(state.paquete.amount)} Robux`;
-    els.confirmNewBalance.textContent = `${formatNumber(state.saldo_actual + state.paquete.amount)} Robux`;
-
-    els.confirmError.hidden = true;
-    els.confirmBtn.disabled = false;
-    els.confirmBtn.textContent = "Confirmar transacción";
-
-    setStep(3);
-    showScreen("confirm");
-  }
-
-  els.backToPackage.addEventListener("click", () => {
-    setStep(2);
-    showScreen("package");
-  });
-
-  els.confirmBtn.addEventListener("click", async () => {
-    els.confirmBtn.disabled = true;
-    els.confirmBtn.textContent = "Enviando…";
-    els.confirmError.hidden = true;
-
-    try {
-      const data = await callFunction({
-        action: "deliver",
-        roblox_id: state.roblox_id,
-        amount: state.paquete.amount,
-      });
-
-      goToSuccessScreen(data);
-    } catch (err) {
-      els.confirmError.textContent = err.message;
-      els.confirmError.hidden = false;
-      els.confirmBtn.disabled = false;
-      els.confirmBtn.textContent = "Confirmar transacción";
-    }
-  });
-
-  /* -------------------------------------------------------------
-     Pantalla 4 — Exito
-     ------------------------------------------------------------- */
-  function goToSuccessScreen(data) {
-    els.successUsername.textContent = `@${data.username || state.username}`;
-    els.successAmount.textContent = `${formatNumber(state.paquete.amount)} Robux enviados · saldo total: ${formatNumber(data.saldo)}`;
-    showScreen("success");
-  }
-
-  els.restartBtn.addEventListener("click", () => {
-    // Reinicia el estado completo para poder mandar Netcoins a otra persona
-    state.roblox_id = null;
-    state.username = null;
-    state.avatar_url = null;
-    state.saldo_actual = 0;
-    state.paquete = null;
-
-    els.usernameInput.value = "";
-    resetPlayerPreview();
-    clearFieldError();
-    els.continueBtn.disabled = true;
-
-    setStep(1);
-    showScreen("player");
-    els.usernameInput.focus();
-  });
-
-})();
-
+// Botón Robux — listo para conectar la siguiente sección
+document.getElementById("robuxBtn").addEventListener("click", () => {
+  // Aquí conectamos lo siguiente que me digas
+  console.log("robux click");
+});
 </script>
 </body>
 </html>
