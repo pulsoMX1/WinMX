@@ -167,11 +167,9 @@ body{display:flex;flex-direction:column;overflow:hidden}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
     </button>
 
-    <!-- Settings/Hexagon -->
-    <button class="rb-icon-btn" title="Configuración">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M12 2L22 7V17L12 22L2 17V7Z"/>
-      </svg>
+    <!-- Settings/Foto redonda -->
+    <button class="rb-icon-btn" title="Configuración" style="padding:0;border-radius:50%;overflow:hidden;background:#e0e0e0">
+      <img src="" alt="Settings" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>
     </button>
 
     <!-- Notificaciones -->
@@ -194,7 +192,7 @@ body{display:flex;flex-direction:column;overflow:hidden}
   <!-- Usuario -->
   <div class="user-section">
     <div class="user-avatar">
-      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23d0d0d0'/%3E%3Crect x='30' y='15' width='40' height='35' rx='4' fill='%23888'/%3E%3Cellipse cx='50' cy='70' rx='25' ry='20' fill='%23888'/%3E%3C/svg%3E" alt="Avatar"/>
+      <img src="" alt="Avatar dani022011c" placeholder="Foto del usuario"/>
     </div>
     <span class="user-name">dani022011c</span>
   </div>
@@ -212,7 +210,7 @@ body{display:flex;flex-direction:column;overflow:hidden}
     <!-- Amigo 1 -->
     <div class="friend-card">
       <div class="friend-avatar">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e0c0ff'/%3E%3Crect x='35' y='20' width='30' height='35' rx='3' fill='%23999'/%3E%3Cellipse cx='50' cy='75' rx='30' ry='20' fill='%23999'/%3E%3C/svg%3E" alt="day"/>
+        <img src="" alt="day"/>
       </div>
       <span class="friend-name">day</span>
     </div>
@@ -220,7 +218,7 @@ body{display:flex;flex-direction:column;overflow:hidden}
     <!-- Amigo 2 -->
     <div class="friend-card">
       <div class="friend-avatar">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232a2a2a'/%3E%3Crect x='35' y='20' width='30' height='35' rx='3' fill='%23666'/%3E%3Cellipse cx='50' cy='75' rx='30' ry='20' fill='%23666'/%3E%3C/svg%3E" alt="Nalguitasde"/>
+        <img src="" alt="Nalguitasde"/>
       </div>
       <span class="friend-name">Nalguitasde...</span>
     </div>
@@ -228,7 +226,7 @@ body{display:flex;flex-direction:column;overflow:hidden}
     <!-- Amigo 3 -->
     <div class="friend-card">
       <div class="friend-avatar">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234a4a4a'/%3E%3Crect x='35' y='20' width='30' height='35' rx='3' fill='%23888'/%3E%3Cellipse cx='50' cy='75' rx='30' ry='20' fill='%23888'/%3E%3C/svg%3E" alt="Andres"/>
+        <img src="" alt="Andres"/>
       </div>
       <span class="friend-name">Andr</span>
     </div>
@@ -324,10 +322,10 @@ body{display:flex;flex-direction:column;overflow:hidden}
   </a>
 
   <!-- Avatar -->
-  <a class="nav-item" href="#" onclick="return false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-5 3.5-8 8-8s8 3 8 8"/>
-    </svg>
+  <a class="nav-item avatar-nav-item" href="#" onclick="return false">
+    <div style="width:28px;height:28px;border-radius:50%;background:#e0e0e0;overflow:hidden;display:flex;align-items:center;justify-content:center">
+      <img src="" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>
+    </div>
     <span>Avatar</span>
   </a>
 
