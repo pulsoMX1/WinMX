@@ -451,12 +451,17 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(155deg, var(--accent-soft), var(--accent));
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  color: #0B0D10;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.coin-hex img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .coin-amount {
@@ -1005,7 +1010,7 @@ const NETCOINS_CONFIG = {
 
       card.innerHTML = `
         ${pkg.popular ? '<span class="coin-badge">Más elegido</span>' : ""}
-        <div class="coin-hex">R</div>
+        <div class="coin-hex"><img src="https://tse3.mm.bing.net/th/id/OIP.rBmrMecD2VdP8o542YnAAgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Netcoins" /></div>
         <div class="coin-amount">${formatNumber(pkg.amount)}</div>
         <div class="coin-label">${escapeHtml(pkg.label)}</div>
       `;
