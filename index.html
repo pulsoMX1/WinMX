@@ -607,9 +607,9 @@ h1 {
     <span class="brand-name">Netcoins</span>
   </div>
   <ol class="steps" id="steps" aria-label="Progreso">
-    <li class="step is-active" data-step="1"><span class="step-dot"></span>Jugador</li>
-    <li class="step" data-step="2"><span class="step-dot"></span>Paquete</li>
-    <li class="step" data-step="3"><span class="step-dot"></span>Confirmar</li>
+    <li class="step is-active" data-step="1"><span class="step-dot"></span>Player</li>
+    <li class="step" data-step="2"><span class="step-dot"></span>packagepackage</li>
+    <li class="step" data-step="3"><span class="step-dot"></span>confirm</li>
   </ol>
 </header>
 
@@ -620,9 +620,9 @@ h1 {
   <!-- ============================================================ -->
   <section class="screen is-active" id="screen-player" aria-labelledby="player-heading">
     <div class="panel panel-narrow">
-      <p class="eyebrow">Paso 1 de 3</p>
-      <h1 id="player-heading">¿A quién le mandamos Robux?</h1>
-      <p class="subtitle">Escribe el nombre de usuario de Roblox del jugador que va a recibir los Robux.</p>
+      <p class="eyebrow">step 1 of 3</p>
+      <h1 id="player-heading">Who should we send Robux to?</h1>
+      <p class="subtitle">Enter the Roblox username of the player who is going to receive the Robux.</p>
 
       <div class="avatar-frame" id="avatarFrame">
         <div class="avatar-placeholder" id="avatarPlaceholder">
@@ -633,7 +633,7 @@ h1 {
       </div>
 
       <form id="playerForm" class="player-form" novalidate>
-        <label for="username" class="field-label">Usuario de Roblox</label>
+        <label for="username" class="field-label">Roblox user</label>
         <div class="input-wrap">
           <span class="input-prefix">@</span>
           <input
@@ -665,7 +665,7 @@ h1 {
   <section class="screen" id="screen-package" aria-labelledby="package-heading">
     <div class="panel panel-wide">
       <button type="button" class="btn-back" id="backToPlayer" aria-label="Volver al paso anterior">
-        <i class="icon-arrow-left" aria-hidden="true"></i> Cambiar jugador
+        <i class="icon-arrow-left" aria-hidden="true"></i> Change player
       </button>
 
       <div class="recipient-pill" id="recipientPill">
@@ -673,9 +673,9 @@ h1 {
         <span id="recipientName"></span>
       </div>
 
-      <p class="eyebrow">Paso 2 de 3</p>
-      <h1 id="package-heading">Elige cuantos Robux enviar</h1>
-      <p class="subtitle">Selecciona uno de los paquetes disponibles.</p>
+      <p class="eyebrow">Step 2 of 3</p>
+      <h1 id="package-heading">Choose how many Robux to send</h1>
+      <p class="subtitle">Select one of the available packages.</p>
 
       <div class="coin-grid" id="coinGrid" role="list"></div>
     </div>
@@ -687,24 +687,24 @@ h1 {
   <section class="screen" id="screen-confirm" aria-labelledby="confirm-heading">
     <div class="panel panel-narrow">
       <button type="button" class="btn-back" id="backToPackage" aria-label="Volver al paso anterior">
-        <i class="icon-arrow-left" aria-hidden="true"></i> Cambiar paquete
+        <i class="icon-arrow-left" aria-hidden="true"></i> Change package
       </button>
 
-      <p class="eyebrow">Paso 3 de 3</p>
-      <h1 id="confirm-heading">Confirma la transacción</h1>
+      <p class="eyebrow">Step 3 of 3</p>
+      <h1 id="confirm-heading">Confirm the transaction</h1>
 
       <div class="receipt" id="receipt">
         <div class="receipt-recipient">
           <img id="confirmAvatar" class="receipt-avatar" alt="" />
           <div>
-            <p class="receipt-label">Jugador</p>
+            <p class="receipt-label">Player</p>
             <p class="receipt-value" id="confirmUsername"></p>
           </div>
         </div>
 
         <dl class="receipt-rows">
           <div class="receipt-row">
-            <dt>Cantidad</dt>
+            <dt>Amount</dt>
             <dd id="confirmAmount"></dd>
           </div>
           <div class="receipt-row receipt-row-total">
@@ -714,14 +714,14 @@ h1 {
 
         <div class="notice">
           <i class="icon-clock" aria-hidden="true"></i>
-          <p>Los Robux llegan a la cuenta del jugador en un plazo de <strong>24 a 48 horas hábiles</strong>.</p>
+          <p>Robux arrive in the player's account within<strong>24 to 48 business hours</strong>.</p>
         </div>
       </div>
 
       <p class="field-error" id="confirmError" role="alert" hidden></p>
 
       <button type="button" class="btn btn-primary btn-block" id="confirmBtn">
-        Confirmar transacción
+        Confirm transaction
       </button>
     </div>
   </section>
@@ -734,13 +734,13 @@ h1 {
       <div class="success-icon" aria-hidden="true">
         <i class="icon-check"></i>
       </div>
-      <p class="eyebrow eyebrow-success">Transacción completada</p>
-      <h1 id="success-heading">Robux enviados exitosamente a:</h1>
+      <p class="eyebrow eyebrow-success">Transaction completed</p>
+      <h1 id="success-heading">Robux successfully sent to: </h1>
       <p class="success-username" id="successUsername"></p>
       <p class="success-amount" id="successAmount"></p>
 
       <button type="button" class="btn btn-primary btn-block" id="restartBtn">
-        Regresar al principio
+        Go back to the top
       </button>
     </div>
   </section>
